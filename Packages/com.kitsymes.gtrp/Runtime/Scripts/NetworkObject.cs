@@ -19,6 +19,5 @@ public sealed class NetworkObject : MonoBehaviour
     {
         _id = objectID;
         _owner = ownerID;
-
     }
 }

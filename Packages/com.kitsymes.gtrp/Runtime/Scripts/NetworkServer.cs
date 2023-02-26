@@ -17,9 +17,10 @@ namespace KitSymes.GTRP
         public string ip = "127.0.0.1";
         public int port = 25565;
         //private UdpClient _udpClient;
-        private Dictionary<uint, Action<Packet>> _handlers = new Dictionary<uint, Action<Packet>>();
+        //private Dictionary<uint, Action<Packet>> _handlers = new Dictionary<uint, Action<Packet>>();
 
         // Server Only
+        private Dictionary<Type, Action<Packet>> _serverHandlers = new();
         private bool _serverRunning = false;
         private int _clientCount;
         private Dictionary<int, Client> _clients;
@@ -27,6 +28,7 @@ namespace KitSymes.GTRP
         private UdpClient _udpListener;
 
         // Client Only
+        private Dictionary<Type, Action<Packet>> _clientHandlers = new();
         private LocalClient _localClient;
 
         void Awake()
@@ -35,6 +37,9 @@ namespace KitSymes.GTRP
                 Destroy(this);
             else
                 Instance = this;
+
+            // Poke the PacketRegister to make sure it's loaded on start
+            //_ = PacketRegister.Instance;
         }
 
         void OnDestroy()
@@ -43,14 +48,16 @@ namespace KitSymes.GTRP
                 Instance = null;
         }
 
+        public void TestPacketMethod(PacketSpawnObject packet)
+        {
+            Debug.Log("pso recieved");
+        }
+
         #region Server Methods
         public void ServerStart()
         {
             if (_serverRunning)
                 return;
-
-            // Poke the PacketRegister to make sure it's loaded on start
-            _ = PacketRegister.Instance;
 
             _serverRunning = true;
             _clientCount = 0;
@@ -81,6 +88,9 @@ namespace KitSymes.GTRP
 
             _tcpListener.Stop();
             _udpListener.Close();
+
+            _clientHandlers.Clear();
+
             Debug.Log("Server Stopped");
         }
 
@@ -130,6 +140,22 @@ namespace KitSymes.GTRP
                 }
             }
         }
+
+        // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        public void RegisterServerPacketHandler<T>(Action<T> handler) where T : Packet
+        {
+            Action<Packet> wrapper = packet => handler(packet as T);
+            if (_serverHandlers.ContainsKey(typeof(T)))
+                _serverHandlers[typeof(T)] += wrapper;
+            else
+                _serverHandlers.Add(typeof(T), wrapper);
+        }
+
+        public void ServerPacketReceived(Packet packet)
+        {
+            if (_serverHandlers.ContainsKey(packet.GetType()) && _serverHandlers[packet.GetType()] != null)
+                _serverHandlers[packet.GetType()].Invoke(packet);
+        }
         #endregion
 
         #region Client Methods
@@ -147,6 +173,8 @@ namespace KitSymes.GTRP
                 _localClient.Stop();
                 _localClient = null;
             }
+
+            RegisterClientPacketHandler<PacketSpawnObject>(TestPacketMethod);
         }
 
         public void ClientStop()
@@ -157,12 +185,29 @@ namespace KitSymes.GTRP
             _localClient.Stop();
             _localClient = null;
 
+            _clientHandlers.Clear();
             Debug.Log("Client Stopped");
         }
 
         public bool IsClientRunning()
         {
             return _localClient != null && _localClient.IsRunning();
+        }
+
+        // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        public void RegisterClientPacketHandler<T>(Action<T> handler) where T : Packet
+        {
+            Action<Packet> wrapper = packet => handler(packet as T);
+            if (_clientHandlers.ContainsKey(typeof(T)))
+                _clientHandlers[typeof(T)] += wrapper;
+            else
+                _clientHandlers.Add(typeof(T), wrapper);
+        }
+
+        public void ClientPacketReceived(Packet packet)
+        {
+            if (_clientHandlers.ContainsKey(packet.GetType()) && _clientHandlers[packet.GetType()] != null)
+                _clientHandlers[packet.GetType()].Invoke(packet);
         }
         #endregion
     }

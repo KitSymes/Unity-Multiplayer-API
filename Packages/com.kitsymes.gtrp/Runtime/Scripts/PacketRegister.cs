@@ -19,18 +19,46 @@ namespace KitSymes.GTRP
         private PacketRegister()
         {
             // Based off of https://stackoverflow.com/questions/51020619/unique-id-for-each-class
-            IEnumerable<Type> packetTypes = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsSubclassOf(typeof(Packet)));
-            MD5 md5 = MD5.Create();
-            foreach (Type packetType in packetTypes)
-            {
-                byte[] md5Bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(packetType.AssemblyQualifiedName));
-                uint id = BitConverter.ToUInt32(md5Bytes);
+            // Optimisation based off of https://forum.unity.com/threads/gather-only-user-defined-assemblies.1218786/
+MD5 md5 = MD5.Create();
 
-                messageTypeToId[packetType] = id;
-                idToMessageType[id] = packetType;
+            // Need to filter out the assemblies list to only user created ones (e.g. The Assembly C# and Packages)
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(assembly =>
+            !assembly.GetName().Name.StartsWith("Mono.") &&
+            !assembly.GetName().Name.StartsWith("System.") &&
+            !assembly.GetName().Name.StartsWith("Unity.") &&
+            !assembly.GetName().Name.StartsWith("UnityEditor.") &&
+            !assembly.GetName().Name.StartsWith("UnityEngine.") &&
+            !assembly.GetName().Name.Equals("Bee.BeeDriver") &&
+            !assembly.GetName().Name.Equals("ExCSS.Unity") &&
+            !assembly.GetName().Name.Equals("log4net") &&
+            !assembly.GetName().Name.Equals("Mono.Security") &&
+            !assembly.GetName().Name.Equals("mscorlib") &&
+            !assembly.GetName().Name.Equals("netstandard") &&
+            !assembly.GetName().Name.Equals("Newtonsoft.Json") &&
+            !assembly.GetName().Name.Equals("nunit.framework") &&
+            !assembly.GetName().Name.Equals("PlayerBuildProgramLibrary.Data") &&
+            !assembly.GetName().Name.Equals("ReportGeneratorMerged") &&
+            !assembly.GetName().Name.Equals("System") &&
+            !assembly.GetName().Name.Equals("UnityEditor") &&
+            !assembly.GetName().Name.Equals("UnityEngine") &&
+            !assembly.GetName().Name.Equals("unityplastic") &&
+            !assembly.GetName().Name.Equals("Unrelated") &&
+            !assembly.GetName().Name.Equals("SyntaxTree.VisualStudio.Unity.Bridge") &&
+            !assembly.GetName().Name.Equals("SyntaxTree.VisualStudio.Unity.Messaging")
+            ).ToArray();
 
-                Debug.Log(packetType + ": " + id);
-            }
+            foreach (Assembly assembly in assemblies)
+                foreach (Type packetType in assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Packet))))
+                {
+                    byte[] md5Bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(packetType.AssemblyQualifiedName));
+                    uint id = BitConverter.ToUInt32(md5Bytes);
+
+                    messageTypeToId[packetType] = id;
+                    idToMessageType[id] = packetType;
+
+                    Debug.Log(packetType + ": " + id);
+                }
         }
     }
 }

@@ -96,7 +96,7 @@ namespace KitSymes.GTRP.Internal
                     // Deserialise Packet
                     MemoryStream ms = new MemoryStream(packetBuffer);
                     Packet packet = _formatter.Deserialize(ms) as Packet;
-
+                    NetworkServer.Instance.ClientPacketReceived(packet);
                 }
                 catch (IOException)
                 {
