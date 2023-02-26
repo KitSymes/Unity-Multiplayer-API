@@ -84,14 +84,21 @@ namespace KitSymes.GTRP.Internal
                     // Read until a packet size is encountered
                     byte[] sizeBuffer = new byte[sizeof(int)];
                     int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
-                    if (bytesRead <= 0)
+                    if (bytesRead < sizeBuffer.Length)
+                    {
+                        Debug.Log("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
                         continue;
-
+                    }
                     int bufferSize = BitConverter.ToInt32(sizeBuffer);
 
                     // Try and read the whole packet
                     byte[] packetBuffer = new byte[bufferSize];
-                    await _tcpClient.GetStream().ReadAsync(packetBuffer);
+                    bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
+                    if (bytesRead < packetBuffer.Length)
+                    {
+                        Debug.Log("Invalid packetBuffer, read " + bytesRead + " bytes when it should be " + packetBuffer.Length);
+                        continue;
+                    }
 
                     // Deserialise Packet
                     MemoryStream ms = new MemoryStream(packetBuffer);
