@@ -12,6 +12,7 @@ namespace KitSymes.GTRP.Internal
     {
         private int _id;
 
+        private NetworkManager _networkManager;
         private string _ip;
         private int _port;
 
@@ -24,9 +25,10 @@ namespace KitSymes.GTRP.Internal
         private BinaryWriter _writer;
         private BinaryFormatter _formatter;
 
-        public LocalClient(string ip, int port)
+        public LocalClient(NetworkManager networkManager, string ip, int port)
         {
             _id = -1;
+            _networkManager = networkManager;
             _ip = ip;
             _port = port;
 
@@ -86,7 +88,7 @@ namespace KitSymes.GTRP.Internal
                     int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
                     if (bytesRead < sizeBuffer.Length)
                     {
-                        Debug.Log("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
+                        Debug.LogError("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
                         continue;
                     }
                     int bufferSize = BitConverter.ToInt32(sizeBuffer);
@@ -96,18 +98,18 @@ namespace KitSymes.GTRP.Internal
                     bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
                     if (bytesRead < packetBuffer.Length)
                     {
-                        Debug.Log("Invalid packetBuffer, read " + bytesRead + " bytes when it should be " + packetBuffer.Length);
+                        Debug.LogError("Invalid packetBuffer, read " + bytesRead + " bytes when it should be " + packetBuffer.Length);
                         continue;
                     }
 
                     // Deserialise Packet
                     MemoryStream ms = new MemoryStream(packetBuffer);
                     Packet packet = _formatter.Deserialize(ms) as Packet;
-                    NetworkServer.Instance.ClientPacketReceived(packet);
+                    _networkManager.ClientPacketReceived(packet);
                 }
                 catch (IOException)
                 {
-                    Debug.Log("Client closed so stopping receiving TCP");
+                    //Debug.Log("Client closed so stopping receiving TCP");
                     // TODO Server potentially closed, so add a check and handle accordingly
                 }
             }
@@ -123,7 +125,7 @@ namespace KitSymes.GTRP.Internal
                 }
                 catch (ObjectDisposedException)
                 {
-                    Debug.Log("Client closed so stopping Receiving UDP");
+                    //Debug.Log("Client closed so stopping Receiving UDP");
                 }
             }
         }

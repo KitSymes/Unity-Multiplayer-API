@@ -6,7 +6,7 @@ namespace KitSymes.GTRP
     public class NetworkGUI : MonoBehaviour
     {
         [SerializeField]
-        private NetworkServer _server;
+        private NetworkMonoBehaviour _server;
         [SerializeField]
         private Text _serverButtonText;
         [SerializeField]
@@ -26,7 +26,7 @@ namespace KitSymes.GTRP
 
         public void ToggleServer()
         {
-            if (!_server.IsServerRunning())
+            if (!_server.IsServer())
             {
                 _server.ServerStart();
                 _serverButtonText.text = "Stop Server";
@@ -49,7 +49,7 @@ namespace KitSymes.GTRP
 
         public void ToggleClient()
         {
-            if (!_server.IsClientRunning())
+            if (!_server.IsClient())
             {
                 _server.ClientStart();
                 _clientButtonText.text = "Stop Client";

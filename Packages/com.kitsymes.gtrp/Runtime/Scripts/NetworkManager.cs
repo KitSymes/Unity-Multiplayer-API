@@ -8,16 +8,11 @@ using UnityEngine;
 
 namespace KitSymes.GTRP
 {
-    public class NetworkServer : MonoBehaviour
+    public class NetworkManager
     {
         // Shared
         //public Scene _offlineScene;
         //public Scene _onlineScene;
-        public static NetworkServer Instance { get; private set; }
-        public string ip = "127.0.0.1";
-        public int port = 25565;
-        //private UdpClient _udpClient;
-        //private Dictionary<uint, Action<Packet>> _handlers = new Dictionary<uint, Action<Packet>>();
 
         // Server Only
         private Dictionary<Type, Action<Packet>> _serverHandlers = new();
@@ -31,30 +26,13 @@ namespace KitSymes.GTRP
         private Dictionary<Type, Action<Packet>> _clientHandlers = new();
         private LocalClient _localClient;
 
-        void Awake()
-        {
-            if (Instance != null && Instance != this)
-                Destroy(this);
-            else
-                Instance = this;
-
-            // Poke the PacketRegister to make sure it's loaded on start
-            //_ = PacketRegister.Instance;
-        }
-
-        void OnDestroy()
-        {
-            if (Instance != null && Instance == this)
-                Instance = null;
-        }
-
         public void TestPacketMethod(PacketSpawnObject packet)
         {
             Debug.Log("pso recieved");
         }
 
         #region Server Methods
-        public void ServerStart()
+        public void ServerStart(string ip = "127.0.0.1", int port = 25565)
         {
             if (_serverRunning)
                 return;
@@ -62,14 +40,13 @@ namespace KitSymes.GTRP
             _serverRunning = true;
             _clientCount = 0;
             _clients = new Dictionary<int, Client>();
-            DontDestroyOnLoad(gameObject);
 
             _tcpListener = new TcpListener(System.Net.IPAddress.Any, port);
             _tcpListener.Start();
-            AcceptTCPClients();
+            _ = AcceptTCPClients();
 
             _udpListener = new UdpClient(port);
-            UdpListen();
+            _ = UdpListen();
 
             Debug.Log("Server Started");
         }
@@ -99,7 +76,7 @@ namespace KitSymes.GTRP
             return _serverRunning;
         }
 
-        private async void AcceptTCPClients()
+        private async Task AcceptTCPClients()
         {
             while (_serverRunning)
             {
@@ -112,18 +89,16 @@ namespace KitSymes.GTRP
                     _clientCount++;
                     Client c = new Client(_clientCount, task.Result);
                     _clients.Add(_clientCount, c);
-                    Debug.Log("Accepted");
-                    c.SendTCP(new PacketSpawnObject());
-                    c.SendTCP(new PacketDespawnObject());
+                    Debug.Log("Accepted a Connection");
                 }
                 catch (ObjectDisposedException)
                 {
-                    Debug.Log("Server closed so stopping accepting TCP Clients");
+                    //Debug.Log("Server closed so stopping accepting TCP Clients");
                 }
             }
         }
 
-        private async void UdpListen()
+        private async Task UdpListen()
         {
             while (_serverRunning)
             {
@@ -132,11 +107,11 @@ namespace KitSymes.GTRP
                     Task<UdpReceiveResult> task = _udpListener.ReceiveAsync();
                     await task;
                     UdpReceiveResult result = task.Result;
-                    Debug.Log("Udp Listened");
+                    Debug.Log("Received Udp");
                 }
                 catch (ObjectDisposedException)
                 {
-                    Debug.Log("Server closed so stopping listening to UDP");
+                    //Debug.Log("Server closed so stopping listening to UDP");
                 }
             }
         }
@@ -159,12 +134,12 @@ namespace KitSymes.GTRP
         #endregion
 
         #region Client Methods
-        public async void ClientStart()
+        public async Task ClientStart(string ip = "127.0.0.1", int port = 25565)
         {
             if (_localClient != null || IsClientRunning())
-                return;
+                throw new ClientException("Client is already running");
 
-            _localClient = new LocalClient(ip, port);
+            _localClient = new LocalClient(this, ip, port);
             bool connected = await _localClient.Connect();
             if (connected)
                 Debug.Log("Client Started");
@@ -172,6 +147,7 @@ namespace KitSymes.GTRP
             {
                 _localClient.Stop();
                 _localClient = null;
+                throw new ClientException("Client failed to connect");
             }
 
             RegisterClientPacketHandler<PacketSpawnObject>(TestPacketMethod);
