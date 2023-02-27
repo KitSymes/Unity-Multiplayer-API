@@ -81,12 +81,17 @@ namespace KitSymes.GTRP.Internal
         {
             while (_running)
             {
+                Debug.Log("TCP Run");
                 try
                 {
                     // Read until a packet size is encountered
                     byte[] sizeBuffer = new byte[sizeof(int)];
                     int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
-                    if (bytesRead < sizeBuffer.Length)
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+                    else if (bytesRead < sizeBuffer.Length)
                     {
                         Debug.LogError("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
                         continue;
@@ -96,7 +101,11 @@ namespace KitSymes.GTRP.Internal
                     // Try and read the whole packet
                     byte[] packetBuffer = new byte[bufferSize];
                     bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
-                    if (bytesRead < packetBuffer.Length)
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+                    else if (bytesRead < packetBuffer.Length)
                     {
                         Debug.LogError("Invalid packetBuffer, read " + bytesRead + " bytes when it should be " + packetBuffer.Length);
                         continue;
@@ -109,25 +118,37 @@ namespace KitSymes.GTRP.Internal
                 }
                 catch (IOException)
                 {
-                    //Debug.Log("Client closed so stopping receiving TCP");
-                    // TODO Server potentially closed, so add a check and handle accordingly
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    Debug.Log("TCP Disposed");
+                    break;
                 }
             }
+            if (_running)
+            {
+                Debug.LogError("TCP Closed whilst client is still running");
+                _networkManager.ClientStop();
+            }
+            Debug.Log("Client stopping receiving TCP");
         }
 
         public async void ReceiveUdp()
         {
             while (_running)
             {
+                Debug.Log("UDP run");
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
                 }
                 catch (ObjectDisposedException)
                 {
-                    //Debug.Log("Client closed so stopping Receiving UDP");
+                    break;
                 }
             }
+            Debug.Log("Client stopping Receiving UDP");
         }
 
         public int GetID() { return _id; }

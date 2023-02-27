@@ -9,11 +9,21 @@ using UnityEngine.TestTools;
 
 public class ConnectionTests
 {
-    // A Test behaves as an ordinary method
-    /*[Test]
+    /*// A Test behaves as an ordinary method
+    [Test]
     public void TestStub()
     {
         // Use the Assert class to test conditions
+    }
+
+    // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
+    // `yield return null;` to skip a frame.
+    [UnityTest]
+    public IEnumerator TempTestsWithEnumeratorPasses()
+    {
+        // Use the Assert class to test conditions.
+        // Use yield to skip a frame.
+        yield return null;
     }*/
 
     [Test]
@@ -33,8 +43,6 @@ public class ConnectionTests
 
         NetworkManager manager = new NetworkManager();
         Assert.Throws<ClientException>(() => RunAsyncMethodSync(() => manager.ClientStart()));
-        //RunAsyncMethodSync(() => manager.ClientStart());
-        //manager.ClientStart();
         manager.ClientStop();
     }
 
@@ -48,13 +56,4 @@ public class ConnectionTests
         Task.Run(async () => await asyncFunc()).GetAwaiter().GetResult();
     }
 
-    // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
-    // `yield return null;` to skip a frame.
-    /*[UnityTest]
-    public IEnumerator TempTestsWithEnumeratorPasses()
-    {
-        // Use the Assert class to test conditions.
-        // Use yield to skip a frame.
-        yield return null;
-    }*/
 }
