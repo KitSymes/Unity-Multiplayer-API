@@ -1,23 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace KitSymes.GTRP
+namespace KitSymes.GTRP.MonoBehaviours
 {
     public class NetworkMonoBehaviour : MonoBehaviour
     {
         private NetworkManager _networkManager;
 
+        [Tooltip("The IP a Client will attempt to connect to.")]
         public string ip = "127.0.0.1";
+        [Tooltip("The Port a Server will listen on and a Client will attempt to connect to.")]
         public int port = 25565;
+
+        [Tooltip("The File Path to the Offline Scene.\nHas no effect if changed during Play Mode.")]
+        public string offlineScene;
+        [Tooltip("The File Path to the Online Scene.\nHas no effect if changed during Play Mode.")]
+        public string onlineScene;
+
+        [Tooltip("The List of Spawnable Prefabs.\nPrefabs must have a NetworkObject component.")]
+        public List<NetworkObject> spawnablePrefabs;
 
         void Awake()
         {
             _networkManager = new NetworkManager();
+            _networkManager.SetOfflineScene(offlineScene);
+            _networkManager.SetOnlineScene(onlineScene);
+            _networkManager.SetSpawnableObjects(spawnablePrefabs);
+
+#if UNITY_EDITOR
+            for (uint i = 0; i < spawnablePrefabs.Count; i++)
+                spawnablePrefabs[(int)i].SetPrefabID(i);
+#endif
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            for (uint i = 0; i < spawnablePrefabs.Count; i++)
+                spawnablePrefabs[(int)i].SetPrefabID(i);
+        }
+#endif
 
         #region Server Methods
         public void ServerStart()
@@ -54,5 +76,6 @@ namespace KitSymes.GTRP
             return _networkManager.IsClientRunning();
         }
         #endregion
+
     }
 }

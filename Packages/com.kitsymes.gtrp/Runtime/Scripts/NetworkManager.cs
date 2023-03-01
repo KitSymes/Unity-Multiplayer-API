@@ -1,34 +1,84 @@
 using KitSymes.GTRP.Internal;
+using KitSymes.GTRP.MonoBehaviours;
 using KitSymes.GTRP.Packets;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 namespace KitSymes.GTRP
 {
+    [Serializable]
     public class NetworkManager
     {
         // Shared
-        //public Scene _offlineScene;
-        //public Scene _onlineScene;
+        private static NetworkManager _instance;
+
+        public string _offlineScene;
+        public string _onlineScene;
+
+        public List<NetworkObject> _spawnableObjects;
+        private uint _spawnedObjectsCount;
+        public Dictionary<uint, NetworkObject> _spawnedObjects;
 
         // Server Only
         private Dictionary<Type, Action<Packet>> _serverHandlers = new();
         private bool _serverRunning = false;
-        private int _clientCount;
-        private Dictionary<int, Client> _clients;
+        private uint _clientCount;
+        private Dictionary<uint, Client> _clients;
         private TcpListener _tcpListener;
-        private UdpClient _udpListener;
+        private UdpClient _udpClient;
 
         // Client Only
         private Dictionary<Type, Action<Packet>> _clientHandlers = new();
         private LocalClient _localClient;
 
-        public void TestPacketMethod(PacketSpawnObject packet)
+        void SharedStart()
         {
-            Debug.Log("pso recieved");
+            if (_instance == null)
+                _instance = this;
+
+            if (_spawnableObjects == null)
+                _spawnableObjects = new List<NetworkObject>();
+            _spawnedObjectsCount = 0;
+            _spawnedObjects = new Dictionary<uint, NetworkObject>();
+
+            // Only load the scene if has not already loaded it because it's both.
+            if (!IsServerRunning() || !IsClientRunning())
+            {
+                SceneManager.LoadScene(_onlineScene);
+            }
+        }
+
+        void SharedStop()
+        {
+            if (_instance != null && _instance == this && !IsClientRunning() && !IsServerRunning())
+                _instance = null;
+
+            _spawnedObjects.Clear();
+
+            if (!IsServerRunning() && !IsClientRunning())
+                SceneManager.LoadScene(_offlineScene);
+        }
+
+        void Update()
+        {
+            if (IsServerRunning())
+            {
+                List<Packet> tcpPackets = new List<Packet>();
+                List<Packet> udpPackets = new List<Packet>();
+                foreach (NetworkObject networkObject in _spawnedObjects.Values)
+                {
+                    tcpPackets.AddRange(networkObject.GetTCPPackets());
+                    udpPackets.AddRange(networkObject.GetUDPPackets());
+                    networkObject.ClearPackets();
+                }
+                SendToAll(tcpPackets.ToArray());
+                Broadcast(udpPackets.ToArray());
+            }
         }
 
         #region Server Methods
@@ -39,14 +89,16 @@ namespace KitSymes.GTRP
 
             _serverRunning = true;
             _clientCount = 0;
-            _clients = new Dictionary<int, Client>();
+            _clients = new Dictionary<uint, Client>();
 
             _tcpListener = new TcpListener(System.Net.IPAddress.Any, port);
             _tcpListener.Start();
             _ = AcceptTCPClients();
 
-            _udpListener = new UdpClient(port);
+            _udpClient = new UdpClient(port);
             _ = UdpListen();
+
+            SharedStart();
 
             Debug.Log("Server Started");
         }
@@ -64,9 +116,11 @@ namespace KitSymes.GTRP
             _clients.Clear();
 
             _tcpListener.Stop();
-            _udpListener.Close();
+            _udpClient.Close();
 
             _clientHandlers.Clear();
+
+            SharedStop();
 
             Debug.Log("Server Stopped");
         }
@@ -84,18 +138,19 @@ namespace KitSymes.GTRP
                 try
                 {
                     await task;
-                    // TODO
                     // Increment _clientCount first, because we want to count clients normally, as ID 0 represents the Server (For things such as ownerID)
                     _clientCount++;
                     Client c = new Client(_clientCount, task.Result);
                     _clients.Add(_clientCount, c);
+                    //TODO send them all spawned objects
                     Debug.Log("Accepted a Connection");
                 }
                 catch (ObjectDisposedException)
                 {
-                    //Debug.Log("Server closed so stopping accepting TCP Clients");
+                    break;
                 }
             }
+            Debug.Log("Server closed so stopping accepting TCP Clients");
         }
 
         private async Task UdpListen()
@@ -104,7 +159,7 @@ namespace KitSymes.GTRP
             {
                 try
                 {
-                    Task<UdpReceiveResult> task = _udpListener.ReceiveAsync();
+                    Task<UdpReceiveResult> task = _udpClient.ReceiveAsync();
                     await task;
                     UdpReceiveResult result = task.Result;
                     Debug.Log("Received Udp");
@@ -131,6 +186,83 @@ namespace KitSymes.GTRP
             if (_serverHandlers.ContainsKey(packet.GetType()) && _serverHandlers[packet.GetType()] != null)
                 _serverHandlers[packet.GetType()].Invoke(packet);
         }
+
+        private void SendTo(uint clientID, Packet packet)
+        {
+            if (!_clients.ContainsKey(clientID))
+            {
+                Debug.LogError("Attempted to send packet to invalid clientID " + clientID);
+                return;
+            }
+            _clients[clientID].SendTCP(packet);
+        }
+
+        private void SendToAll(params Packet[] packets)
+        {
+            foreach (Client client in _clients.Values)
+                client.SendTCP(packets);
+        }
+
+        private void Broadcast(params Packet[] packets)
+        {
+            _udpClient.SendAsync();
+        }
+
+        public void Spawn(NetworkObject obj)
+        {
+            if (!IsServerRunning())
+            {
+                Debug.LogError("Tried to Spawn " + obj.name + " with no server running");
+                return;
+            }
+
+            if (obj.IsSpawned())
+            {
+                Debug.LogError("Tried to Spawn " + obj.name + " again");
+                return;
+            }
+
+            _spawnedObjects[_spawnedObjectsCount] = obj;
+            obj.Spawn(_spawnedObjectsCount, 0);
+            _spawnedObjectsCount++;
+            ExecuteEvents.Execute<INetworkMessageTarget>(obj.gameObject, null, (x, y) => x.OnServerStart());
+
+            SendToAll(new PacketSpawnObject
+            {
+                prefabID = obj.GetPrefabID(),
+                objectNetworkID = obj.GetNetworkID(),
+                ownerNetworkID = obj.GetOwnerID(),
+                positionX = obj.transform.position.x,
+                positionY = obj.transform.position.y,
+                positionZ = obj.transform.position.z,
+                rotationX = obj.transform.rotation.x,
+                rotationY = obj.transform.rotation.y,
+                rotationZ = obj.transform.rotation.z,
+                rotationW = obj.transform.rotation.w,
+                localScaleX = obj.transform.localScale.x,
+                localScaleY = obj.transform.localScale.y,
+                localScaleZ = obj.transform.localScale.z,
+            });
+        }
+
+        public static void Spawn(GameObject obj)
+        {
+            if (_instance == null)
+            {
+                Debug.LogError("Tried to Spawn " + obj.name + " with no server running");
+                return;
+            }
+
+            NetworkObject networkObject = obj.GetComponent<NetworkObject>();
+
+            if (networkObject == null)
+            {
+                Debug.LogError("Tried to Spawn " + obj.name + " but it does not have a NetworkObject component");
+                return;
+            }
+
+            _instance.Spawn(networkObject);
+        }
         #endregion
 
         #region Client Methods
@@ -150,7 +282,8 @@ namespace KitSymes.GTRP
                 throw new ClientException("Client failed to connect");
             }
 
-            RegisterClientPacketHandler<PacketSpawnObject>(TestPacketMethod);
+            SharedStart();
+            RegisterClientPacketHandler<PacketSpawnObject>(ClientPacketSpawnObjectReceived);
         }
 
         public void ClientStop()
@@ -162,6 +295,8 @@ namespace KitSymes.GTRP
             _localClient = null;
 
             _clientHandlers.Clear();
+
+            SharedStop();
             Debug.Log("Client Stopped");
         }
 
@@ -184,6 +319,52 @@ namespace KitSymes.GTRP
         {
             if (_clientHandlers.ContainsKey(packet.GetType()) && _clientHandlers[packet.GetType()] != null)
                 _clientHandlers[packet.GetType()].Invoke(packet);
+        }
+        #endregion
+
+        #region Client Handlers
+        public void ClientPacketSpawnObjectReceived(PacketSpawnObject packet)
+        {
+            // Validate Packet
+            if (packet.prefabID >= _spawnableObjects.Count)
+                return;
+            if (_spawnedObjects.ContainsKey(packet.objectNetworkID))
+                return;
+
+            // Do not spawn duplicate if this client is host
+            if (IsServerRunning())
+                return;
+
+            GameObject newObj = UnityEngine.Object.Instantiate(_spawnableObjects[(int)packet.prefabID].gameObject);
+            newObj.transform.SetPositionAndRotation(packet.GetPosition(), packet.GetRotation());
+            newObj.transform.localScale = packet.GetScale();
+
+            NetworkObject networkObject = newObj.GetComponent<NetworkObject>();
+            _spawnedObjects[packet.objectNetworkID] = networkObject;
+            networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID);
+        }
+        #endregion
+
+        #region Setters
+        public void SetOfflineScene(string offlineScene)
+        {
+            if (IsServerRunning() || IsClientRunning())
+                return;
+            _offlineScene = offlineScene;
+        }
+
+        public void SetOnlineScene(string onlineScene)
+        {
+            if (IsServerRunning() || IsClientRunning())
+                return;
+            _onlineScene = onlineScene;
+        }
+
+        public void SetSpawnableObjects(List<NetworkObject> spawnableObjects)
+        {
+            if (IsServerRunning() || IsClientRunning())
+                return;
+            _spawnableObjects = spawnableObjects;
         }
         #endregion
     }

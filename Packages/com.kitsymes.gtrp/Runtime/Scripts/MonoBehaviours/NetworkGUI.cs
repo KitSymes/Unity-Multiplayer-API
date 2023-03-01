@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace KitSymes.GTRP
+namespace KitSymes.GTRP.MonoBehaviours
 {
     public class NetworkGUI : MonoBehaviour
     {

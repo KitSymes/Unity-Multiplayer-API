@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -81,11 +83,10 @@ namespace KitSymes.GTRP.Internal
         {
             while (_running)
             {
-                Debug.Log("TCP Run");
                 try
                 {
                     // Read until a packet size is encountered
-                    byte[] sizeBuffer = new byte[sizeof(int)];
+                    byte[] sizeBuffer = new byte[sizeof(uint)];
                     int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
                     if (bytesRead == 0)
                     {
@@ -96,7 +97,7 @@ namespace KitSymes.GTRP.Internal
                         Debug.LogError("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
                         continue;
                     }
-                    int bufferSize = BitConverter.ToInt32(sizeBuffer);
+                    uint bufferSize = BitConverter.ToUInt32(sizeBuffer);
 
                     // Try and read the whole packet
                     byte[] packetBuffer = new byte[bufferSize];
@@ -142,6 +143,23 @@ namespace KitSymes.GTRP.Internal
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
+                    if (result.Buffer.Length < sizeof(uint))
+                    {
+                        Debug.LogError("Invalid UDP buffer, read " + result.Buffer.Length + " bytes");
+                        continue;
+                    }
+                    uint bufferSize = BitConverter.ToUInt32(result.Buffer.Take(sizeof(uint)).ToArray());
+
+                    if (result.Buffer.Length < sizeof(uint) + bufferSize)
+                    {
+                        Debug.LogError("Invalid UDP buffer, read " + result.Buffer.Length + " bytes when it should be " + (sizeof(uint) + bufferSize) + " bytes");
+                        continue;
+                    }
+
+                    // Deserialise Packet
+                    MemoryStream ms = new MemoryStream(result.Buffer.Skip(sizeof(uint)).ToArray());
+                    Packet packet = _formatter.Deserialize(ms) as Packet;
+                    _networkManager.ClientPacketReceived(packet);
                 }
                 catch (ObjectDisposedException)
                 {

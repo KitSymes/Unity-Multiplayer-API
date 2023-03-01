@@ -9,7 +9,7 @@ namespace KitSymes.GTRP.Internal
     public class Client
     {
         // 0 is Server, so this ID will start at 1
-        private int _id;
+        private uint _id;
 
         private TcpClient _tcpClient;
         private SemaphoreSlim _tcpWriteAsyncLock;
@@ -18,7 +18,7 @@ namespace KitSymes.GTRP.Internal
         private BinaryWriter _writer;
         private BinaryFormatter _formatter;
 
-        public Client(int id, TcpClient tcp)
+        public Client(uint id, TcpClient tcp)
         {
             _id = id;
             _tcpClient = tcp;
@@ -36,20 +36,23 @@ namespace KitSymes.GTRP.Internal
             _tcpClient.Close();
         }
 
-        public async void SendTCP(Packet packet)
+        public async void SendTCP(params Packet[] packets)
         {
             await _tcpWriteAsyncLock.WaitAsync();
 
             try
             {
-                // Prepare Packet
-                MemoryStream ms = new MemoryStream();
-                _formatter.Serialize(ms, packet);
-                byte[] buffer = ms.GetBuffer();
+                foreach (Packet packet in packets)
+                {
+                    // Prepare Packet
+                    MemoryStream ms = new MemoryStream();
+                    _formatter.Serialize(ms, packet);
+                    byte[] buffer = ms.GetBuffer();
 
-                // Send Packet Size + Packet
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes(buffer.Length));
-                await _tcpClient.GetStream().WriteAsync(buffer);
+                    // Send Packet Size + Packet
+                    await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
+                    await _tcpClient.GetStream().WriteAsync(buffer);
+                }
 
                 // Flush Stream
                 await _tcpClient.GetStream().FlushAsync();
@@ -60,6 +63,6 @@ namespace KitSymes.GTRP.Internal
             }
         }
 
-        public int GetID() { return _id; }
+        public uint GetID() { return _id; }
     }
 }

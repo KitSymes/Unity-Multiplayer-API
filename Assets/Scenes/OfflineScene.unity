@@ -376,10 +376,58 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4028943666789913681, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -475
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943666789913681, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 200
+      objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227568, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: m_Name
       value: Server GUI Prefab
       objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: onlineScene
+      value: Scenes/OnlineScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _onlineScene
+      value: Scenes/OnlineScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: offlineScene
+      value: Scenes/OfflineScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _offlineScene
+      value: Scenes/OfflineScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: spawnablePrefabs.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _spawnableObjects.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: spawnablePrefabs.Array.data[0]
+      value: 
+      objectReference: {fileID: 5351177282266957140, guid: d65fbade148703449b4844166572e940, type: 3}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: spawnablePrefabs.Array.data[1]
+      value: 
+      objectReference: {fileID: 4244420779793585726, guid: c51852d8cbfbc40459b235a64776cdd1, type: 3}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: spawnablePrefabs.Array.data[2]
+      value: 
+      objectReference: {fileID: 6045724727241640758, guid: 2720e5cfb206b6f42a362e4130c8f416, type: 3}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _spawnableObjects.Array.data[0]
+      value: 
+      objectReference: {fileID: 5351177282266957140, guid: d65fbade148703449b4844166572e940, type: 3}
     - target: {fileID: 4028943667592227582, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: m_RootOrder
       value: 3

@@ -1,21 +1,18 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace KitSymes.GTRP
+namespace KitSymes.GTRP.MonoBehaviours
 {
-    public class NetworkBehaviour : MonoBehaviour
+    [RequireComponent(typeof(NetworkObject))]
+    public class NetworkBehaviour : MonoBehaviour, INetworkMessageTarget
     {
-        // Start is called before the first frame update
-        void Start()
-        {
+        protected NetworkObject networkObject;
 
+        private void Awake()
+        {
+            networkObject = GetComponent<NetworkObject>();
         }
 
-        // Update is called once per frame
-        void Update()
-        {
+        public virtual void OnServerStart() { }
 
-        }
     }
 }
