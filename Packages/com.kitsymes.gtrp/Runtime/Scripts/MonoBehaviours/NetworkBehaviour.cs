@@ -13,6 +13,7 @@ namespace KitSymes.GTRP.MonoBehaviours
         }
 
         public virtual void OnServerStart() { }
+        public virtual void OnPacketReceive(Packet packet) { }
 
     }
 }

@@ -6,7 +6,7 @@ namespace KitSymes.GTRP.MonoBehaviours
     public class NetworkGUI : MonoBehaviour
     {
         [SerializeField]
-        private NetworkMonoBehaviour _server;
+        private NetworkManagerBehaviour _server;
         [SerializeField]
         private Text _serverButtonText;
         [SerializeField]

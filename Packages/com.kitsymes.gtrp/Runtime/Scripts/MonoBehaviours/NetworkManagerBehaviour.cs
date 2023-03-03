@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KitSymes.GTRP.MonoBehaviours
 {
-    public class NetworkMonoBehaviour : MonoBehaviour
+    public class NetworkManagerBehaviour : MonoBehaviour
     {
         private NetworkManager _networkManager;
 
@@ -31,6 +31,11 @@ namespace KitSymes.GTRP.MonoBehaviours
             for (uint i = 0; i < spawnablePrefabs.Count; i++)
                 spawnablePrefabs[(int)i].SetPrefabID(i);
 #endif
+        }
+
+        void Update()
+        {
+            _networkManager.Update();
         }
 
 #if UNITY_EDITOR

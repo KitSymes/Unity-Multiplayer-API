@@ -1,4 +1,5 @@
 ﻿using KitSymes.GTRP.Packets;
+using System;
 using UnityEngine;
 
 namespace KitSymes.GTRP.MonoBehaviours
@@ -13,6 +14,8 @@ namespace KitSymes.GTRP.MonoBehaviours
         private bool _rotationChanged;
         private bool _scaleChanged;
 
+        private DateTime _lastSyncTimestamp;
+
         public override void OnServerStart()
         {
             _lastPosition = transform.position;
@@ -22,12 +25,34 @@ namespace KitSymes.GTRP.MonoBehaviours
             _positionChanged = false;
             _rotationChanged = false;
             _scaleChanged = false;
+
+            _lastSyncTimestamp = DateTime.UtcNow;
+        }
+
+        public override void OnPacketReceive(Packet packet)
+        {
+            if (packet is not PacketNetworkTransformSync)
+                return;
+
+            PacketNetworkTransformSync sync = (PacketNetworkTransformSync)packet;
+
+            // Timestamp is the same as or before _lastSyncTimestamp
+            if (sync.timestamp.CompareTo(_lastSyncTimestamp) <= 0)
+                return;
+
+            if (sync.HasPosition())
+                transform.position = sync.position;
+            if (sync.HasRotation())
+                transform.rotation = sync.rotation;
+            if (sync.HasScale())
+                transform.localScale = sync.localScale;
+            _lastSyncTimestamp = sync.timestamp;
         }
 
         void Update()
         {
-            // If the object isn't spawned, skip
-            if (!networkObject.IsSpawned())
+            // If the object isn't spawned or is not the server, skip
+            if (!networkObject.IsSpawned() || !NetworkManager.IsServer())
                 return;
 
             // Check to see if the position, rotation and scale have changed since last frame
@@ -51,7 +76,7 @@ namespace KitSymes.GTRP.MonoBehaviours
             if (_positionChanged || _rotationChanged || _scaleChanged)
             {
                 // Feed it all information as it filters itself
-                networkObject.AddUDPPacket(new PacketNetworkTransformSync(_positionChanged, _rotationChanged, _scaleChanged) { position = _lastPosition, rotation = _lastRotation, localScale = _lastScale});
+                networkObject.AddUDPPacket(new PacketNetworkTransformSync(networkObject.GetNetworkID(), _positionChanged, _rotationChanged, _scaleChanged) { position = _lastPosition, rotation = _lastRotation, localScale = _lastScale });
 
                 // Reset states
                 _positionChanged = false;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,7 +6,7 @@ namespace KitSymes.GTRP.MonoBehaviours
 {
     public sealed class NetworkObject : MonoBehaviour
     {
-        [SerializeField, HideInInspector]
+        [SerializeField]
         private uint _prefabID;
 
         private uint _networkID;

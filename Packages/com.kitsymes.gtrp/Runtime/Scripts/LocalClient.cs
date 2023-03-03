@@ -1,10 +1,10 @@
-﻿using System;
+﻿using KitSymes.GTRP.Packets;
+using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -12,8 +12,6 @@ namespace KitSymes.GTRP.Internal
 {
     public class LocalClient
     {
-        private int _id;
-
         private NetworkManager _networkManager;
         private string _ip;
         private int _port;
@@ -23,19 +21,19 @@ namespace KitSymes.GTRP.Internal
         private TcpClient _tcpClient;
         private UdpClient _udpClient;
 
-        private BinaryReader _reader;
-        private BinaryWriter _writer;
+        private SemaphoreSlim _tcpWriteAsyncLock;
         private BinaryFormatter _formatter;
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
         {
-            _id = -1;
             _networkManager = networkManager;
             _ip = ip;
             _port = port;
 
             _tcpClient = new TcpClient();
             _udpClient = new UdpClient();
+
+            _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
         }
 
         public async Task<bool> Connect()
@@ -44,11 +42,9 @@ namespace KitSymes.GTRP.Internal
             if (!IPAddress.TryParse(_ip, out address))
                 return false;
 
-            Task task = _tcpClient.ConnectAsync(address, _port);
-
             try
             {
-                await task;
+                await _tcpClient.ConnectAsync(address, _port);
             }
             catch (SocketException)
             {
@@ -56,8 +52,6 @@ namespace KitSymes.GTRP.Internal
                 return false;
             }
 
-            _reader = new BinaryReader(_tcpClient.GetStream());
-            _writer = new BinaryWriter(_tcpClient.GetStream());
             _formatter = new BinaryFormatter();
 
             _udpClient.Connect(address, _port);
@@ -66,17 +60,41 @@ namespace KitSymes.GTRP.Internal
 
             ReceiveTcp();
             ReceiveUdp();
+
             Debug.Log("Connected");
+
+            SendTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint });
             return true;
         }
 
         public void Stop()
         {
             _running = false;
-            _reader?.Close();
-            _writer?.Close();
             _tcpClient.Close();
             _udpClient?.Close();
+        }
+
+        public async void SendTCP(Packet packet)
+        {
+            await _tcpWriteAsyncLock.WaitAsync();
+
+            try
+            {
+                MemoryStream ms = new MemoryStream();
+                _formatter.Serialize(ms, packet);
+                byte[] buffer = ms.GetBuffer();
+
+                // Send Packet Size + Packet
+                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
+                await _tcpClient.GetStream().WriteAsync(buffer);
+
+                // Flush Stream
+                await _tcpClient.GetStream().FlushAsync();
+            }
+            finally
+            {
+                _tcpWriteAsyncLock.Release();
+            }
         }
 
         public async void ReceiveTcp()
@@ -139,25 +157,12 @@ namespace KitSymes.GTRP.Internal
         {
             while (_running)
             {
-                Debug.Log("UDP run");
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    if (result.Buffer.Length < sizeof(uint))
-                    {
-                        Debug.LogError("Invalid UDP buffer, read " + result.Buffer.Length + " bytes");
-                        continue;
-                    }
-                    uint bufferSize = BitConverter.ToUInt32(result.Buffer.Take(sizeof(uint)).ToArray());
-
-                    if (result.Buffer.Length < sizeof(uint) + bufferSize)
-                    {
-                        Debug.LogError("Invalid UDP buffer, read " + result.Buffer.Length + " bytes when it should be " + (sizeof(uint) + bufferSize) + " bytes");
-                        continue;
-                    }
 
                     // Deserialise Packet
-                    MemoryStream ms = new MemoryStream(result.Buffer.Skip(sizeof(uint)).ToArray());
+                    MemoryStream ms = new MemoryStream(result.Buffer);
                     Packet packet = _formatter.Deserialize(ms) as Packet;
                     _networkManager.ClientPacketReceived(packet);
                 }
@@ -168,8 +173,6 @@ namespace KitSymes.GTRP.Internal
             }
             Debug.Log("Client stopping Receiving UDP");
         }
-
-        public int GetID() { return _id; }
 
         public bool IsRunning() { return _running; }
     }
