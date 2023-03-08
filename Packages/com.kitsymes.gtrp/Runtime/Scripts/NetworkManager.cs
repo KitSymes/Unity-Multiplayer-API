@@ -347,6 +347,54 @@ namespace KitSymes.GTRP
             _instance.Spawn(networkObject);
         }
 
+        public void Despawn(uint id, NetworkObject networkObject)
+        {
+            // Validate
+            if (!IsServerRunning())
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " with no server running");
+                return;
+            }
+
+            if (id != networkObject.GetNetworkID())
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " but it had an ID mismatch");
+                return;
+            }
+
+            if (!_spawnedObjects.ContainsKey(id))
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " but it does not exist");
+                return;
+            }
+
+            if (_spawnedObjects[id] != networkObject)
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " but it does not match its ID");
+                return;
+            }
+
+            if (!networkObject.IsSpawned())
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " when it wasn't spawned");
+                return;
+            }
+
+            _spawnedObjects.Remove(id);
+            SendToAll(new PacketDespawnObject() { objectNetworkID = id });
+        }
+
+        public static void Despawn(NetworkObject networkObject)
+        {
+            if (_instance == null)
+            {
+                Debug.LogError("Tried to Despawn " + networkObject.name + " with no server running");
+                return;
+            }
+
+            _instance.Despawn(networkObject.GetNetworkID(), networkObject);
+        }
+
         public static bool IsServer()
         {
             if (_instance == null)
@@ -386,6 +434,7 @@ namespace KitSymes.GTRP
 
             SharedStart();
             RegisterClientPacketHandler<PacketSpawnObject>(ClientPacketSpawnObjectReceived);
+            RegisterClientPacketHandler<PacketDespawnObject>(ClientPacketDespawnObjectReceived);
             RegisterClientPacketHandler<PacketNetworkTransformSync>(ClientPacketTargetedReceived);
         }
 
@@ -445,6 +494,20 @@ namespace KitSymes.GTRP
             NetworkObject networkObject = newObj.GetComponent<NetworkObject>();
             _spawnedObjects[packet.objectNetworkID] = networkObject;
             networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID);
+        }
+
+        public void ClientPacketDespawnObjectReceived(PacketDespawnObject packet)
+        {
+            // Do not spawn duplicate if this client is host
+            if (IsServerRunning())
+                return;
+
+            // Validate Packet
+            if (!_spawnedObjects.ContainsKey(packet.objectNetworkID))
+                return;
+
+            UnityEngine.Object.Destroy(_spawnedObjects[packet.objectNetworkID].gameObject);
+            _spawnedObjects.Remove(packet.objectNetworkID);
         }
 
         public void ClientPacketTargetedReceived(PacketTargeted packet)

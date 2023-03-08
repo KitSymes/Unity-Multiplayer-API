@@ -29,6 +29,12 @@ namespace KitSymes.GTRP.MonoBehaviours
                 gameObject.SetActive(false);
         }
 
+        void OnDestroy()
+        {
+            if (_spawned && NetworkManager.IsServer())
+                NetworkManager.Despawn(this);
+        }
+
         public void Spawn(uint networkID, uint ownerNetworkID)
         {
             if (_spawned)

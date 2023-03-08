@@ -5,8 +5,6 @@ namespace KitSymes.GTRP.Packets
     [Serializable]
     public class PacketDespawnObject : Packet
     {
-        public PacketDespawnObject()
-        {
-        }
+        public uint objectNetworkID;
     }
 }
