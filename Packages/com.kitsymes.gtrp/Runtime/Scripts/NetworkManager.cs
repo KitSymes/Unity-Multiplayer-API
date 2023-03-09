@@ -16,23 +16,27 @@ using UnityEngine.SceneManagement;
 namespace KitSymes.GTRP
 {
     [Serializable]
-    public class NetworkManager
+    public partial class NetworkManager
     {
+        // Delegates and Events
+        public delegate void EventSubscriber();
+        public event EventSubscriber OnServerStart;
+        public event EventSubscriber OnServerStop;
+        public event EventSubscriber OnClientStart;
+        public event EventSubscriber OnClientStop;
+
         // Shared
         private static NetworkManager _instance;
-
-        public string _offlineScene;
-        public string _onlineScene;
 
         public List<NetworkObject> _spawnableObjects;
         private uint _spawnedObjectsCount;
         public Dictionary<uint, NetworkObject> _spawnedObjects;
 
         // Server Only
-        private Dictionary<Type, Action<Client, Packet>> _serverHandlers = new();
+        private Dictionary<Type, Action<ServerSideClient, Packet>> _serverHandlers = new();
         private bool _serverRunning = false;
         private uint _clientCount;
-        private Dictionary<uint, Client> _clients;
+        private Dictionary<uint, ServerSideClient> _clients;
         private TcpListener _tcpListener;
         private UdpClient _udpClient;
         private BinaryFormatter _formatter;
@@ -53,7 +57,6 @@ namespace KitSymes.GTRP
             if (!IsServerRunning() || !IsClientRunning())
             {
                 _spawnedObjects = new Dictionary<uint, NetworkObject>();
-                SceneManager.LoadScene(_onlineScene);
             }
         }
 
@@ -65,9 +68,10 @@ namespace KitSymes.GTRP
             if (!IsServerRunning() && !IsClientRunning())
             {
                 _spawnedObjects.Clear();
-                SceneManager.LoadScene(_offlineScene);
             }
         }
+
+        partial void RegisterPackets();
 
         public void Update()
         {
@@ -94,7 +98,7 @@ namespace KitSymes.GTRP
 
             _serverRunning = true;
             _clientCount = 0;
-            _clients = new Dictionary<uint, Client>();
+            _clients = new Dictionary<uint, ServerSideClient>();
             _spawnedObjectsCount = 0;
 
             _tcpListener = new TcpListener(System.Net.IPAddress.Any, port);
@@ -108,7 +112,7 @@ namespace KitSymes.GTRP
             SharedStart();
             //RegisterServerPacketHandler<Packet>(ServerOnPacketConnectReceived);
 
-            Debug.Log("Server Started");
+            OnServerStart?.Invoke();
         }
 
         public void ServerStop()
@@ -117,7 +121,7 @@ namespace KitSymes.GTRP
                 return;
             _serverRunning = false;
 
-            foreach (Client c in _clients.Values)
+            foreach (ServerSideClient c in _clients.Values)
             {
                 c.Stop();
             }
@@ -131,7 +135,7 @@ namespace KitSymes.GTRP
 
             SharedStop();
 
-            Debug.Log("Server Stopped");
+            OnServerStop?.Invoke();
         }
 
         public bool IsServerRunning()
@@ -149,7 +153,7 @@ namespace KitSymes.GTRP
                     await task;
                     // Increment _clientCount first, because we want to count clients normally, as ID 0 represents the Server (For things such as ownerID)
                     _clientCount++;
-                    Client c = new Client(this, _clientCount, task.Result);
+                    ServerSideClient c = new ServerSideClient(this, _clientCount, task.Result);
                     _clients.Add(_clientCount, c);
                     if (_spawnedObjects.Count > 0)
                     {
@@ -200,16 +204,16 @@ namespace KitSymes.GTRP
         }
 
         // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
-        public void RegisterServerPacketHandler<T>(Action<Client, T> handler) where T : Packet
+        public void RegisterServerPacketHandler<T>(Action<ServerSideClient, T> handler) where T : Packet
         {
-            Action<Client, Packet> wrapper = (sender, packet) => handler(sender, packet as T);
+            Action<ServerSideClient, Packet> wrapper = (sender, packet) => handler(sender, packet as T);
             if (_serverHandlers.ContainsKey(typeof(T)))
                 _serverHandlers[typeof(T)] += wrapper;
             else
                 _serverHandlers.Add(typeof(T), wrapper);
         }
 
-        public void ServerPacketReceived(Client sender, Packet packet)
+        public void ServerPacketReceived(ServerSideClient sender, Packet packet)
         {
             if (_serverHandlers.ContainsKey(packet.GetType()) && _serverHandlers[packet.GetType()] != null)
                 _serverHandlers[packet.GetType()].Invoke(sender, packet);
@@ -225,7 +229,7 @@ namespace KitSymes.GTRP
 
             SendTo(_clients[clientID], packets);
         }
-        private void SendTo(Client client, params Packet[] packets)
+        private void SendTo(ServerSideClient client, params Packet[] packets)
         {
             if (packets.Length <= 0)
                 return;
@@ -264,7 +268,7 @@ namespace KitSymes.GTRP
                 packetBuffer.AddRange(buffer);
             }
 
-            foreach (Client client in _clients.Values)
+            foreach (ServerSideClient client in _clients.Values)
                 client.SendTCP(packetBuffer.ToArray());
         }
 
@@ -281,7 +285,7 @@ namespace KitSymes.GTRP
                 _formatter.Serialize(ms, packet);
                 //packetBuffer.AddRange();
 
-                foreach (Client client in _clients.Values)
+                foreach (ServerSideClient client in _clients.Values)
                     if (client.GetUdpEndPoint() != null)
                         _udpClient.SendAsync(ms.GetBuffer(), ms.GetBuffer().Length, client.GetUdpEndPoint());
             }
@@ -408,7 +412,7 @@ namespace KitSymes.GTRP
         #endregion
 
         #region Server Handlers
-        public void ServerOnPacketReceived(Client sender, Packet packet)
+        public void ServerOnPacketReceived(ServerSideClient sender, Packet packet)
         {
             // Validate Packet
 
@@ -423,9 +427,7 @@ namespace KitSymes.GTRP
 
             _localClient = new LocalClient(this, ip, port);
             bool connected = await _localClient.Connect();
-            if (connected)
-                Debug.Log("Client Started");
-            else
+            if (!connected)
             {
                 _localClient.Stop();
                 _localClient = null;
@@ -436,6 +438,8 @@ namespace KitSymes.GTRP
             RegisterClientPacketHandler<PacketSpawnObject>(ClientPacketSpawnObjectReceived);
             RegisterClientPacketHandler<PacketDespawnObject>(ClientPacketDespawnObjectReceived);
             RegisterClientPacketHandler<PacketNetworkTransformSync>(ClientPacketTargetedReceived);
+
+            OnClientStart?.Invoke();
         }
 
         public void ClientStop()
@@ -449,7 +453,8 @@ namespace KitSymes.GTRP
             _clientHandlers.Clear();
 
             SharedStop();
-            Debug.Log("Client Stopped");
+
+            OnClientStop?.Invoke();
         }
 
         public bool IsClientRunning()
@@ -526,20 +531,6 @@ namespace KitSymes.GTRP
         #endregion
 
         #region Setters
-        public void SetOfflineScene(string offlineScene)
-        {
-            if (IsServerRunning() || IsClientRunning())
-                return;
-            _offlineScene = offlineScene;
-        }
-
-        public void SetOnlineScene(string onlineScene)
-        {
-            if (IsServerRunning() || IsClientRunning())
-                return;
-            _onlineScene = onlineScene;
-        }
-
         public void SetSpawnableObjects(List<NetworkObject> spawnableObjects)
         {
             if (IsServerRunning() || IsClientRunning())

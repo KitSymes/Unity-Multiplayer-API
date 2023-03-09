@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace KitSymes.GTRP.MonoBehaviours
 {
@@ -12,9 +13,9 @@ namespace KitSymes.GTRP.MonoBehaviours
         [Tooltip("The Port a Server will listen on and a Client will attempt to connect to.")]
         public int port = 25565;
 
-        [Tooltip("The File Path to the Offline Scene.\nHas no effect if changed during Play Mode.")]
+        [Tooltip("The File Path to the Offline Scene.")]
         public string offlineScene;
-        [Tooltip("The File Path to the Online Scene.\nHas no effect if changed during Play Mode.")]
+        [Tooltip("The File Path to the Online Scene.")]
         public string onlineScene;
 
         [Tooltip("The List of Spawnable Prefabs.\nPrefabs must have a NetworkObject component.")]
@@ -23,9 +24,11 @@ namespace KitSymes.GTRP.MonoBehaviours
         void Awake()
         {
             _networkManager = new NetworkManager();
-            _networkManager.SetOfflineScene(offlineScene);
-            _networkManager.SetOnlineScene(onlineScene);
             _networkManager.SetSpawnableObjects(spawnablePrefabs);
+            _networkManager.OnServerStart += OnServerStart;
+            _networkManager.OnServerStop += OnServerStop;
+            _networkManager.OnClientStart += OnClientStart;
+            _networkManager.OnClientStop += OnClientStop;
 
 #if UNITY_EDITOR
             for (uint i = 0; i < spawnablePrefabs.Count; i++)
@@ -82,5 +85,49 @@ namespace KitSymes.GTRP.MonoBehaviours
         }
         #endregion
 
+        // Events
+        public void OnSharedStart()
+        {
+            if (!IsServer() || !IsClient())
+            {
+                SceneManager.LoadScene(onlineScene);
+            }
+        }
+
+        public void OnSharedStop()
+        {
+            if (!IsServer() && !IsClient())
+            {
+                SceneManager.LoadScene(offlineScene);
+            }
+        }
+
+        public void OnServerStart()
+        {
+            OnSharedStart();
+
+            Debug.Log("Server Started");
+        }
+
+        public void OnServerStop()
+        {
+            OnSharedStop();
+
+            Debug.Log("Server Stopped");
+        }
+
+        public void OnClientStart()
+        {
+            OnSharedStart();
+
+            Debug.Log("Client Started");
+        }
+
+        public void OnClientStop()
+        {
+            OnSharedStop();
+
+            Debug.Log("Client Stopped");
+        }
     }
 }

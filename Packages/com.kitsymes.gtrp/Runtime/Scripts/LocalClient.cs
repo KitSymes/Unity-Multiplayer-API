@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace KitSymes.GTRP.Internal
 {
-    public class LocalClient
+    public class LocalClient : Client
     {
         private NetworkManager _networkManager;
         private string _ip;
@@ -18,11 +18,7 @@ namespace KitSymes.GTRP.Internal
 
         private bool _running = false;
 
-        private TcpClient _tcpClient;
         private UdpClient _udpClient;
-
-        private SemaphoreSlim _tcpWriteAsyncLock;
-        private BinaryFormatter _formatter;
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
         {
@@ -32,8 +28,6 @@ namespace KitSymes.GTRP.Internal
 
             _tcpClient = new TcpClient();
             _udpClient = new UdpClient();
-
-            _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
         }
 
         public async Task<bool> Connect()
@@ -51,8 +45,6 @@ namespace KitSymes.GTRP.Internal
                 Debug.LogError("Client could not connect");
                 return false;
             }
-
-            _formatter = new BinaryFormatter();
 
             _udpClient.Connect(address, _port);
 
@@ -76,25 +68,7 @@ namespace KitSymes.GTRP.Internal
 
         public async void SendTCP(Packet packet)
         {
-            await _tcpWriteAsyncLock.WaitAsync();
-
-            try
-            {
-                MemoryStream ms = new MemoryStream();
-                _formatter.Serialize(ms, packet);
-                byte[] buffer = ms.GetBuffer();
-
-                // Send Packet Size + Packet
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
-                await _tcpClient.GetStream().WriteAsync(buffer);
-
-                // Flush Stream
-                await _tcpClient.GetStream().FlushAsync();
-            }
-            finally
-            {
-                _tcpWriteAsyncLock.Release();
-            }
+            await WriteTCP(packet);
         }
 
         public async void ReceiveTcp()
@@ -103,46 +77,25 @@ namespace KitSymes.GTRP.Internal
             {
                 try
                 {
-                    // Read until a packet size is encountered
-                    byte[] sizeBuffer = new byte[sizeof(uint)];
-                    int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
-                    if (bytesRead == 0)
-                    {
+                    Packet packet = await ReadTCP();
+                    if (packet == null)
                         break;
-                    }
-                    else if (bytesRead < sizeBuffer.Length)
-                    {
-                        Debug.LogError("Invalid sizeBuffer, read " + bytesRead + " bytes when it should be " + sizeBuffer.Length);
-                        continue;
-                    }
-                    uint bufferSize = BitConverter.ToUInt32(sizeBuffer);
 
-                    // Try and read the whole packet
-                    byte[] packetBuffer = new byte[bufferSize];
-                    bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-                    else if (bytesRead < packetBuffer.Length)
-                    {
-                        Debug.LogError("Invalid packetBuffer, read " + bytesRead + " bytes when it should be " + packetBuffer.Length);
-                        continue;
-                    }
-
-                    // Deserialise Packet
-                    MemoryStream ms = new MemoryStream(packetBuffer);
-                    Packet packet = _formatter.Deserialize(ms) as Packet;
                     _networkManager.ClientPacketReceived(packet);
                 }
                 catch (IOException)
                 {
+                    Debug.Log("TCP IO Exception");
                     break;
                 }
                 catch (ObjectDisposedException)
                 {
                     Debug.Log("TCP Disposed");
                     break;
+                }
+                catch (ClientException ex)
+                {
+                    Debug.LogException(ex);
                 }
             }
             if (_running)
