@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace KitSymes.GTRP.Internal
 {
