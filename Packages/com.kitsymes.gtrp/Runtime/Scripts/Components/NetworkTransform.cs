@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-namespace KitSymes.GTRP.MonoBehaviours
+namespace KitSymes.GTRP.Components
 {
     public class NetworkTransform : NetworkBehaviour
     {

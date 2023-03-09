@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace KitSymes.GTRP.MonoBehaviours
+namespace KitSymes.GTRP.Components
 {
     public class NetworkGUI : MonoBehaviour
     {
         [SerializeField]
-        private NetworkManagerBehaviour _server;
+        private NetworkManagerComponent _server;
         [SerializeField]
         private Text _serverButtonText;
         [SerializeField]

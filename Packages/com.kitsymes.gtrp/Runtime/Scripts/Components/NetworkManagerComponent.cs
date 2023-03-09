@@ -2,9 +2,9 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace KitSymes.GTRP.MonoBehaviours
+namespace KitSymes.GTRP.Components
 {
-    public class NetworkManagerBehaviour : MonoBehaviour
+    public class NetworkManagerComponent : MonoBehaviour
     {
         private NetworkManager _networkManager;
 

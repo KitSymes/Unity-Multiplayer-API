@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KitSymes.GTRP.MonoBehaviours
+namespace KitSymes.GTRP
 {
     public sealed class NetworkObject : MonoBehaviour
     {

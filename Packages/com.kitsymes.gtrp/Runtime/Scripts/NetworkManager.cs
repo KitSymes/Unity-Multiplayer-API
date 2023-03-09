@@ -1,17 +1,13 @@
 using KitSymes.GTRP.Internal;
-using KitSymes.GTRP.MonoBehaviours;
 using KitSymes.GTRP.Packets;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 
 namespace KitSymes.GTRP
 {

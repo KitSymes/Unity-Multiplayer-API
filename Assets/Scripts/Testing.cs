@@ -1,5 +1,4 @@
 ﻿using KitSymes.GTRP;
-using KitSymes.GTRP.MonoBehaviours;
 using UnityEngine;
 
 public class Testing : MonoBehaviour

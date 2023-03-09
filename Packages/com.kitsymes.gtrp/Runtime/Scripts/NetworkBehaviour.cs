@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace KitSymes.GTRP.MonoBehaviours
+namespace KitSymes.GTRP
 {
     [RequireComponent(typeof(NetworkObject))]
     public class NetworkBehaviour : MonoBehaviour, INetworkMessageTarget
@@ -10,6 +10,11 @@ namespace KitSymes.GTRP.MonoBehaviours
         private void Awake()
         {
             networkObject = GetComponent<NetworkObject>();
+        }
+
+        public bool IsOwner()
+        {
+            return false;
         }
 
         public virtual void OnServerStart() { }

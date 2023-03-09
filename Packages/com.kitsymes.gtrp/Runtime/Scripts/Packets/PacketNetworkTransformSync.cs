@@ -1,5 +1,4 @@
-﻿using KitSymes.GTRP.MonoBehaviours;
-using System;
+﻿using System;
 using System.Runtime.Serialization;
 using UnityEngine;
 
