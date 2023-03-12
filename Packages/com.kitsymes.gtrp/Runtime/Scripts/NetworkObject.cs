@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,17 +9,19 @@ namespace KitSymes.GTRP
         private uint _prefabID;
 
         private uint _networkID;
-        private uint _ownerNetworkID;
+        private uint _ownerNetworkID = 0;
 
-        private bool _spawned;
+        private bool _spawned = false;
 
-        private List<Packet> _tcpPackets;
-        private List<Packet> _udpPackets;
+        private List<Packet> _tcpPackets = new List<Packet>();
+        private List<Packet> _udpPackets = new List<Packet>();
+
+        private Dictionary<uint, NetworkBehaviour> _networkBehaviours = new Dictionary<uint, NetworkBehaviour>();
+        private uint _networkBehavioursCount = 0;
 
         void Awake()
         {
-            _tcpPackets = new List<Packet>();
-            _udpPackets = new List<Packet>();
+
         }
 
         void Start()
@@ -45,6 +46,14 @@ namespace KitSymes.GTRP
             _ownerNetworkID = ownerNetworkID;
 
             gameObject.SetActive(true);
+        }
+
+        public uint RegisterNetworkBehaviour(NetworkBehaviour networkBehaviour)
+        {
+            uint key = _networkBehavioursCount;
+            _networkBehaviours.Add(key, networkBehaviour);
+            _networkBehavioursCount++;
+            return key;
         }
 
         public void AddTCPPacket(Packet packet) { _tcpPackets.Add(packet); }
