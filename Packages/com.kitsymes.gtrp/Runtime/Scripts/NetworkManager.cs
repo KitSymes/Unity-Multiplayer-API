@@ -518,6 +518,24 @@ namespace KitSymes.GTRP
             _spawnedObjects.Remove(packet.objectNetworkID);
         }
 
+        public void ClientPacketNetworkBehaviourSyncReceived(PacketNetworkBehaviourSync packet)
+        {
+            // Do not duplicate if this client is host
+            if (IsServerRunning())
+                return;
+
+            // Validate Packet
+            if (!_spawnedObjects.ContainsKey(packet.networkObjectID))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
+            if (!networkObject.HasNetworkBehaviour(packet.networkBehaviourID))
+                return;
+            NetworkBehaviour networkBehaviour = networkObject.GetNetworkBehaviour(packet.networkBehaviourID);
+
+            if (networkBehaviour.ShouldParseSyncPacket(packet))
+                networkBehaviour.ParseSyncPacket(packet);
+        }
+
         public void ClientPacketTargetedReceived(PacketTargeted packet)
         {
             // Do not duplicate if this client is host

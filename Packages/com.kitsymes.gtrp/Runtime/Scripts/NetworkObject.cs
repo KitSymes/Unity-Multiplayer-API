@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -81,6 +82,10 @@ namespace KitSymes.GTRP
 #endif
         public uint GetNetworkID() { return _networkID; }
         public uint GetOwnerID() { return _ownerNetworkID; }
+
         public bool IsSpawned() { return _spawned; }
+
+        public bool HasNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours.ContainsKey(networkBehaviourID); }
+        public NetworkBehaviour GetNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours[networkBehaviourID]; }
     }
 }
