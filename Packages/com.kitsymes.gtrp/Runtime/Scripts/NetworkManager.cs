@@ -155,6 +155,7 @@ namespace KitSymes.GTRP
                     {
                         List<Packet> packets = new List<Packet>();
                         foreach (NetworkObject obj in _spawnedObjects.Values)
+                        {
                             packets.Add(new PacketSpawnObject
                             {
                                 prefabID = obj.GetPrefabID(),
@@ -171,6 +172,8 @@ namespace KitSymes.GTRP
                                 localScaleY = obj.transform.localScale.y,
                                 localScaleZ = obj.transform.localScale.z,
                             });
+                            packets.AddRange(obj.GetAllFullSyncPackets());
+                        }
                         SendTo(c, packets.ToArray());
                     }
                     Debug.Log("Accepted a Connection");
@@ -310,7 +313,8 @@ namespace KitSymes.GTRP
             _spawnedObjectsCount++;
             ExecuteEvents.Execute<INetworkMessageTarget>(obj.gameObject, null, (x, y) => x.OnServerStart());
 
-            SendToAll(new PacketSpawnObject
+            List<Packet> packets = new List<Packet>();
+            packets.Add(new PacketSpawnObject
             {
                 prefabID = obj.GetPrefabID(),
                 objectNetworkID = obj.GetNetworkID(),
@@ -326,6 +330,9 @@ namespace KitSymes.GTRP
                 localScaleY = obj.transform.localScale.y,
                 localScaleZ = obj.transform.localScale.z,
             });
+            packets.AddRange(obj.GetAllFullSyncPackets());
+
+            SendToAll(packets.ToArray());
         }
 
         public static void Spawn(GameObject obj)

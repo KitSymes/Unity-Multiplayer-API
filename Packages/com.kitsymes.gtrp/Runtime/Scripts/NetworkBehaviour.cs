@@ -24,10 +24,7 @@ namespace KitSymes.GTRP
             if (!networkObject.IsSpawned())
                 return;
             if (HasChanged())
-            {
-                var a = CreateSyncPacket();
-                networkObject.AddUDPPacket(CreateSyncPacket());
-            }
+                networkObject.AddUDPPacket(CreateDynamicSyncPacket());
         }
 
         public bool IsOwner()
@@ -37,7 +34,8 @@ namespace KitSymes.GTRP
 
         public virtual void Initialise() { }
         public virtual bool HasChanged() { return false; }
-        public virtual PacketNetworkBehaviourSync CreateSyncPacket() { return new PacketNetworkBehaviourSync() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id }; }
+        public virtual PacketNetworkBehaviourSync CreateDynamicSyncPacket() { return new PacketNetworkBehaviourSync() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id }; }
+        public virtual PacketNetworkBehaviourSync CreateFullSyncPacket() { return new PacketNetworkBehaviourSync() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id }; }
 
         public virtual int ParseSyncPacket(PacketNetworkBehaviourSync packet) { return 0; }
         public virtual void OnServerStart() { }

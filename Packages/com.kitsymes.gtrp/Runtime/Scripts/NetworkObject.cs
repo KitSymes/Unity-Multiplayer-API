@@ -61,6 +61,14 @@ namespace KitSymes.GTRP
         public void AddUDPPacket(Packet packet) { _udpPackets.Add(packet); }
         public List<Packet> GetUDPPackets() { return _udpPackets; }
 
+        public List<Packet> GetAllFullSyncPackets()
+        {
+            List<Packet> packets = new List<Packet>();
+            foreach (NetworkBehaviour networkBehaviour in _networkBehaviours.Values)
+                packets.Add(networkBehaviour.CreateFullSyncPacket());
+            return packets;
+        }
+
         public void ClearPackets()
         {
             _tcpPackets.Clear();
