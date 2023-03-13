@@ -1,10 +1,10 @@
 {
   "name": "com.kitsymes.gtrp",
   "version": "1.0.0",
-  "displayName": "KS - GTRP - MP API",
+  "displayName": "KS - GTRP - Multiplayer API",
   "description": "This is a Multiplayer API for Unity",
-  "unity": "2021.3",
-  "unityRelease": "17f1",
+  "unity": "2022.2",
+  "unityRelease": "9f1",
   "author": {
     "name": "Kit Symes",
     "url": "https://www.kitsymes.github.io"

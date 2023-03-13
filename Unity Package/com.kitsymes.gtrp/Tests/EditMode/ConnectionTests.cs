@@ -33,6 +33,7 @@ public class ConnectionTests
         manager.ServerStart();
         RunAsyncMethodSync(() => manager.ClientStart());
         manager.ClientStop();
+
         manager.ServerStop();
     }
 

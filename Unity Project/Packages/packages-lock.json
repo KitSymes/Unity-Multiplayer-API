@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "com.kitsymes.gtrp": {
-      "version": "file:com.kitsymes.gtrp",
+      "version": "file:C:/Users/Charz/Documents/Unity/GTRP/Unity Package/com.kitsymes.gtrp",
       "depth": 0,
-      "source": "embedded",
+      "source": "local",
       "dependencies": {}
     },
     "com.unity.editorcoroutines": {

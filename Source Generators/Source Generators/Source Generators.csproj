@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Source_Generators</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy /y &quot;$(ProjectDir)bin\Release\netstandard2.0\Source Generators.dll&quot; &quot;C:\Users\Charz\Documents\Unity\GTRP\Unity Package\Packages\com.kitsymes.gtrp\Runtime&quot;" />
+  </Target>
+
+</Project>
