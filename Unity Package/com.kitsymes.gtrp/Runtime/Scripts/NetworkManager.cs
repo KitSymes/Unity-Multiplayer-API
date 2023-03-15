@@ -462,9 +462,6 @@ namespace KitSymes.GTRP
             RegisterClientPacketHandler<PacketNetworkBehaviourSync>(OnClientPacketNetworkBehaviourSyncReceived);
 
             OnClientStart?.Invoke();
-
-            _localClient.ReceiveTcp();
-            _localClient.ReceiveUdp();
         }
         public void ClientStop()
         {
@@ -619,13 +616,17 @@ namespace KitSymes.GTRP
         }
         #endregion
 
-        #region Setters
         public void SetSpawnableObjects(List<NetworkObject> spawnableObjects)
         {
             if (IsServerRunning() || IsClientRunning())
                 return;
             _spawnableObjects = spawnableObjects;
         }
-        #endregion
+
+        public void BeginProcessingPackets()
+        {
+            if (IsClientRunning())
+                _localClient.BeginProcessingPackets();
+        }
     }
 }

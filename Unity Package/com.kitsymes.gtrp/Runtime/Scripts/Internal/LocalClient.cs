@@ -1,5 +1,6 @@
 ﻿using KitSymes.GTRP.Packets;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -15,6 +16,8 @@ namespace KitSymes.GTRP.Internal
         private int _port;
 
         private UdpClient _udpClient;
+        private bool _processPackets = false;
+        private Queue<Packet> _packetQueue = new Queue<Packet>();
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
         {
@@ -48,6 +51,9 @@ namespace KitSymes.GTRP.Internal
 
             Debug.Log("Connected");
 
+            ReceiveTcp();
+            ReceiveUdp();
+
             await WriteTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint as IPEndPoint });
             return true;
         }
@@ -69,7 +75,7 @@ namespace KitSymes.GTRP.Internal
                     if (packet == null)
                         break;
                     Debug.Log("Recieved " + packet.GetType());
-                    _networkManager.ClientPacketReceived(packet);
+                    ProcessPacket(packet);
                 }
                 catch (IOException)
                 {
@@ -101,7 +107,7 @@ namespace KitSymes.GTRP.Internal
 
                     // Deserialise Packet
                     Packet packet = PacketFormatter.Deserialise(result.Buffer);
-                    _networkManager.ClientPacketReceived(packet);
+                    ProcessPacket(packet);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -109,6 +115,23 @@ namespace KitSymes.GTRP.Internal
                 }
             }
             Debug.Log("Client stopping Receiving UDP");
+        }
+
+        private void ProcessPacket(Packet packet)
+        {
+            if (!_processPackets)
+                _packetQueue.Enqueue(packet);
+            else
+                _networkManager.ClientPacketReceived(packet);
+        }
+
+        public void BeginProcessingPackets()
+        {
+            _processPackets = true;
+            while (_packetQueue.Count > 0)
+            {
+                _networkManager.ClientPacketReceived(_packetQueue.Dequeue());
+            }
         }
 
         public bool IsRunning() { return _running; }

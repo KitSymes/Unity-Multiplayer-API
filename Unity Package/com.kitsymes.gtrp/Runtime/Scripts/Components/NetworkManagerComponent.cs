@@ -34,6 +34,8 @@ namespace KitSymes.GTRP.Components
             for (uint i = 0; i < spawnablePrefabs.Count; i++)
                 spawnablePrefabs[(int)i].SetPrefabID(i);
 #endif
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         void Update()
@@ -55,6 +57,7 @@ namespace KitSymes.GTRP.Components
                 ClientStop();
             if (IsServer())
                 ServerStop();
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         #region Server Methods
@@ -94,6 +97,12 @@ namespace KitSymes.GTRP.Components
         #endregion
 
         // Events
+        public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (mode == LoadSceneMode.Single && scene.path == "Assets/" + onlineScene + ".unity")
+                _networkManager.BeginProcessingPackets();
+        }
+
         public void OnSharedStart()
         {
             if (!IsServer() || !IsClient())
