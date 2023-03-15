@@ -20,11 +20,6 @@ namespace KitSymes.GTRP
         private Dictionary<uint, NetworkBehaviour> _networkBehaviours = new Dictionary<uint, NetworkBehaviour>();
         private uint _networkBehavioursCount = 0;
 
-        void Awake()
-        {
-
-        }
-
         void Start()
         {
             if (!_spawned)
@@ -66,7 +61,7 @@ namespace KitSymes.GTRP
         {
             List<Packet> packets = new List<Packet>();
             foreach (NetworkBehaviour networkBehaviour in _networkBehaviours.Values)
-                packets.Add(networkBehaviour.CreateFullSyncPacket());
+                packets.Add(networkBehaviour.CreateSyncPacket(false));
             return packets;
         }
 

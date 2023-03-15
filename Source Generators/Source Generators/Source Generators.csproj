@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /y &quot;$(ProjectDir)bin\Release\netstandard2.0\Source Generators.dll&quot; &quot;C:\Users\Charz\Documents\Unity\GTRP\Unity Package\Packages\com.kitsymes.gtrp\Runtime&quot;" />
+    <Exec Command="xcopy /y &quot;$(ProjectDir)bin\Release\netstandard2.0\Source Generators.dll&quot; &quot;C:\Users\Charz\Documents\Unity\GTRP\Unity Package\com.kitsymes.gtrp\Runtime&quot;" />
   </Target>
 
 </Project>

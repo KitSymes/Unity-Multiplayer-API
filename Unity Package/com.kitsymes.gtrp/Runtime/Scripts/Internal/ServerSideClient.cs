@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
+using System.Threading.Tasks;
 
 namespace KitSymes.GTRP.Internal
 {
@@ -14,57 +15,31 @@ namespace KitSymes.GTRP.Internal
         private uint _id;
         private NetworkManager _networkManager;
 
-        private SemaphoreSlim _tcpWriteAsyncLock;
-
         private IPEndPoint _udpEndPoint;
-
-        private bool _running;
 
         public ServerSideClient(NetworkManager networkManager, uint id, TcpClient tcp)
         {
             _id = id;
+            _networkManager = networkManager;
             _tcpClient = tcp;
-            _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
             _udpEndPoint = null;
             _running = true;
 
-            ReceiveTcp();
+            _ = ReceiveTcp();
         }
 
         public void Stop()
         {
             _tcpClient.Close();
+            _running = false;
         }
 
         public void PacketConnectReceived(PacketConnect packet)
         {
-            // Validate Packet
-            if (packet.udpEndPoint is not IPEndPoint)
-            {
-                Debug.LogError("Client " + _id + " tried to send invalid PacketConnect");
-                return;
-            }
-
-            _udpEndPoint = packet.udpEndPoint as IPEndPoint;
+            _udpEndPoint = packet.udpEndPoint;
         }
 
-        public async void SendTCP(byte[] packets)
-        {
-            await _tcpWriteAsyncLock.WaitAsync();
-
-            try
-            {
-                await _tcpClient.GetStream().WriteAsync(packets);
-                // Flush Stream
-                await _tcpClient.GetStream().FlushAsync();
-            }
-            finally
-            {
-                _tcpWriteAsyncLock.Release();
-            }
-        }
-
-        public async void ReceiveTcp()
+        public async Task ReceiveTcp()
         {
             while (_running)
             {
@@ -72,7 +47,10 @@ namespace KitSymes.GTRP.Internal
                 {
                     Packet packet = await ReadTCP();
                     if (packet == null)
+                    {
+                        _networkManager.Disconnect(_id);
                         break;
+                    }
 
                     // TODO This could be maliciously sent multiple times - does that impact anything?
                     if (packet is PacketConnect)
@@ -82,24 +60,26 @@ namespace KitSymes.GTRP.Internal
                 }
                 catch (IOException)
                 {
-                    Debug.Log("SERVER: [" + _id + "] TCP IOException");
+                    Debug.LogWarning($"SERVER: [{_id}] TCP IOException");
                     break;
                 }
                 catch (ObjectDisposedException)
                 {
-                    Debug.Log("SERVER: [" + _id + "] TCP Disposed");
+                    Debug.Log($"SERVER: [{_id}] TCP Disposed");
                     break;
                 }
-                catch (ClientException ex)
+                catch (Exception ex)
                 {
+                    Debug.LogWarning($"SERVER: [{_id}] had an exception, so has been disconnected");
                     Debug.LogException(ex);
+                    _networkManager.Disconnect(_id);
                 }
             }
             if (_running)
             {
-                Debug.LogError("SERVER: [" + _id + "] TCP Closed");
+                Debug.LogError($"SERVER: [{_id}] TCP Closed");
             }
-            Debug.Log("SERVER: [" + _id + "] Client stopping receiving TCP");
+            Debug.Log($"SERVER: [{_id}] Client stopping receiving TCP");
         }
 
         public uint GetID() { return _id; }

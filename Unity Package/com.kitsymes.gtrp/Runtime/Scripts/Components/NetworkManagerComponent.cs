@@ -42,18 +42,26 @@ namespace KitSymes.GTRP.Components
         }
 
 #if UNITY_EDITOR
-        private void OnValidate()
+        void OnValidate()
         {
             for (uint i = 0; i < spawnablePrefabs.Count; i++)
                 spawnablePrefabs[(int)i].SetPrefabID(i);
         }
 #endif
 
+        void OnDestroy()
+        {
+            if (IsClient())
+                ClientStop();
+            if (IsServer())
+                ServerStop();
+        }
+
         #region Server Methods
         public void ServerStart()
         {
             DontDestroyOnLoad(gameObject);
-            _networkManager.ServerStart(ip, port);
+            bool started = _networkManager.ServerStart(port);
         }
 
         public void ServerStop()

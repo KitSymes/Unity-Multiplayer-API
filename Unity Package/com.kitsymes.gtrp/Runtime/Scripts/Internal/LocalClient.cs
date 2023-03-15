@@ -14,8 +14,6 @@ namespace KitSymes.GTRP.Internal
         private string _ip;
         private int _port;
 
-        private bool _running = false;
-
         private UdpClient _udpClient;
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
@@ -48,12 +46,9 @@ namespace KitSymes.GTRP.Internal
 
             _running = true;
 
-            ReceiveTcp();
-            ReceiveUdp();
-
             Debug.Log("Connected");
 
-            SendTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint });
+            await WriteTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint as IPEndPoint });
             return true;
         }
 
@@ -62,11 +57,6 @@ namespace KitSymes.GTRP.Internal
             _running = false;
             _tcpClient.Close();
             _udpClient?.Close();
-        }
-
-        public async void SendTCP(Packet packet)
-        {
-            await WriteTCP(packet);
         }
 
         public async void ReceiveTcp()
@@ -78,27 +68,24 @@ namespace KitSymes.GTRP.Internal
                     Packet packet = await ReadTCP();
                     if (packet == null)
                         break;
-
+                    Debug.Log("Recieved " + packet.GetType());
                     _networkManager.ClientPacketReceived(packet);
                 }
                 catch (IOException)
                 {
-                    Debug.Log("TCP IO Exception");
+                    Debug.Log("CLIENT: TCP Closed");
                     break;
                 }
-                catch (ObjectDisposedException)
+                catch (Exception ex)
                 {
-                    Debug.Log("TCP Disposed");
-                    break;
-                }
-                catch (ClientException ex)
-                {
+                    Debug.LogError("CLIENT: Error vvvv");
                     Debug.LogException(ex);
+                    break;
                 }
             }
             if (_running)
             {
-                Debug.LogError("TCP Closed whilst client is still running");
+                Debug.LogWarning("TCP Closed whilst client is still running");
                 _networkManager.ClientStop();
             }
             Debug.Log("Client stopping receiving TCP");
@@ -113,8 +100,7 @@ namespace KitSymes.GTRP.Internal
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
 
                     // Deserialise Packet
-                    MemoryStream ms = new MemoryStream(result.Buffer);
-                    Packet packet = _formatter.Deserialize(ms) as Packet;
+                    Packet packet = PacketFormatter.Deserialise(result.Buffer);
                     _networkManager.ClientPacketReceived(packet);
                 }
                 catch (ObjectDisposedException)

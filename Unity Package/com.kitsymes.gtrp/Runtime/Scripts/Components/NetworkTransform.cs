@@ -40,11 +40,11 @@ namespace KitSymes.GTRP.Components
             if (sync.timestamp.CompareTo(_lastSyncTimestamp) <= 0)
                 return;
 
-            if (sync.HasPosition())
+            if (sync.containsPosition)
                 transform.position = sync.position;
-            if (sync.HasRotation())
+            if (sync.containsRotation)
                 transform.rotation = sync.rotation;
-            if (sync.HasScale())
+            if (sync.containsScale)
                 transform.localScale = sync.localScale;
             _lastSyncTimestamp = sync.timestamp;
         }
@@ -76,7 +76,16 @@ namespace KitSymes.GTRP.Components
             if (_positionChanged || _rotationChanged || _scaleChanged)
             {
                 // Feed it all information as it filters itself
-                networkObject.AddUDPPacket(new PacketNetworkTransformSync(networkObject.GetNetworkID(), _positionChanged, _rotationChanged, _scaleChanged) { position = _lastPosition, rotation = _lastRotation, localScale = _lastScale });
+                networkObject.AddUDPPacket(new PacketNetworkTransformSync()
+                {
+                    target = networkObject.GetNetworkID(),
+                    containsPosition = _positionChanged,
+                    containsRotation = _rotationChanged,
+                    containsScale = _scaleChanged,
+                    position = _lastPosition,
+                    rotation = _lastRotation,
+                    localScale = _lastScale
+                });
 
                 // Reset states
                 _positionChanged = false;

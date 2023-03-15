@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace KitSymes.GTRP.Packets
 {
-    [Serializable]
     public class PacketSpawnObject : Packet
     {
         public uint prefabID;

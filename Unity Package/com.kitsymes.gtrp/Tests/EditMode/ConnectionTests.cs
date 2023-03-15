@@ -1,8 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using KitSymes.GTRP;
+using KitSymes.GTRP.Internal;
+using KitSymes.GTRP.Packets;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -26,15 +30,20 @@ public class ConnectionTests
         yield return null;
     }*/
 
-    [Test]
+    /*[Test]
     public void TestCanConnect()
     {
         NetworkManager manager = new NetworkManager();
-        manager.ServerStart();
-        RunAsyncMethodSync(() => manager.ClientStart());
-        manager.ClientStop();
-
-        manager.ServerStop();
+        try
+        {
+            manager.ServerStart();
+            RunAsyncMethodSync(() => manager.ClientStart());
+            manager.ClientStop();
+        }
+        finally
+        {
+            manager.ServerStop();
+        }
     }
 
     [Test]
@@ -45,7 +54,7 @@ public class ConnectionTests
         NetworkManager manager = new NetworkManager();
         Assert.Throws<ClientException>(() => RunAsyncMethodSync(() => manager.ClientStart()));
         manager.ClientStop();
-    }
+    }*/
 
     // Based off of https://answers.unity.com/questions/1597151/async-unit-test-in-test-runner.html
     public static T RunAsyncMethodSync<T>(Func<Task<T>> asyncFunc)

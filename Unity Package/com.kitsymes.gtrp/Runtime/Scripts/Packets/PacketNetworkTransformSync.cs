@@ -1,15 +1,15 @@
-﻿using System;
-using System.Runtime.Serialization;
+﻿using KitSymes.GTRP.Internal;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace KitSymes.GTRP.Packets
 {
-    [Serializable]
-    public class PacketNetworkTransformSync : PacketTargeted, ISerializable
+    public class PacketNetworkTransformSync : PacketTargeted
     {
-        private bool _containsPosition;
-        private bool _containsRotation;
-        private bool _containsScale;
+        public bool containsPosition;
+        public bool containsRotation;
+        public bool containsScale;
 
         public Vector3 position;
         public Quaternion rotation;
@@ -17,89 +17,68 @@ namespace KitSymes.GTRP.Packets
 
         public DateTime timestamp;
 
-        public PacketNetworkTransformSync(uint target, bool containsPosition, bool containsRotation, bool containsScale)
+        public PacketNetworkTransformSync()
         {
-            this.target = target;
-            _containsPosition = containsPosition;
-            _containsRotation = containsRotation;
-            _containsScale = containsScale;
             timestamp = DateTime.UtcNow;
         }
-        
-        protected PacketNetworkTransformSync(SerializationInfo info, StreamingContext context)
-        {
-            byte config = info.GetByte("config");
-            _containsPosition = ((config >> 0) & 1) != 0;
-            _containsRotation = ((config >> 1) & 1) != 0;
-            _containsScale = ((config >> 2) & 1) != 0;
 
-            target = info.GetUInt32("target");
-            timestamp = info.GetDateTime("timestamp");
+        public override void Deserialise(byte[] bytes, int pointer)
+        {
+            byte config = bytes[pointer];
+            pointer++;
+            containsPosition = ((config >> 0) & 1) != 0;
+            containsRotation = ((config >> 1) & 1) != 0;
+            containsScale = ((config >> 2) & 1) != 0;
+
+            target = BitConverter.ToUInt32(bytes, pointer);
+            pointer += 4;
+            timestamp = ByteConverter.ToDateTime(bytes, pointer);
+            pointer += 8;
 
             // Check to see if the bits are set indicating this information was sent
-            if (_containsPosition)
+            if (containsPosition)
             {
-                position.x = info.GetSingle("position.x");
-                position.y = info.GetSingle("position.y");
-                position.z = info.GetSingle("position.z");
+                position = ByteConverter.ToVector3(bytes, pointer);
+                pointer += 12;
             }
 
-            if (_containsRotation)
+            if (containsRotation)
             {
-                rotation.x = info.GetSingle("rotation.x");
-                rotation.y = info.GetSingle("rotation.y");
-                rotation.z = info.GetSingle("rotation.z");
-                rotation.w = info.GetSingle("rotation.w");
+                rotation = ByteConverter.ToQuaternion(bytes, pointer);
+                pointer += 16;
             }
 
-            if (_containsScale)
+            if (containsScale)
             {
-                localScale.x = info.GetSingle("localScale.x");
-                localScale.y = info.GetSingle("localScale.y");
-                localScale.z = info.GetSingle("localScale.z");
+                localScale = ByteConverter.ToVector3(bytes, pointer);
+                pointer += 12;
             }
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        public override List<byte> Serialise()
         {
+            List<byte> bytes = new List<byte>();
             byte config = 0;
             // If this information needs to be sent, set a bit flag
-            if (_containsPosition)
+            if (containsPosition)
                 config |= 1 << 0;
-            if (_containsRotation)
+            if (containsRotation)
                 config |= 1 << 1;
-            if (_containsScale)
+            if (containsScale)
                 config |= 1 << 2;
-            info.AddValue("config", config);
+            bytes.Add(config);
 
-            info.AddValue("target", target);
-            info.AddValue("timestamp", timestamp);
+            bytes.AddRange(BitConverter.GetBytes(target));
+            bytes.AddRange(ByteConverter.GetBytes(timestamp));
 
-            if (_containsPosition)
-            {
-                info.AddValue("position.x", position.x);
-                info.AddValue("position.y", position.y);
-                info.AddValue("position.z", position.z);
-            }
+            if (containsPosition)
+                bytes.AddRange(ByteConverter.GetBytes(position));
+            if (containsRotation)
+                bytes.AddRange(ByteConverter.GetBytes(rotation));
+            if (containsScale)
+                bytes.AddRange(ByteConverter.GetBytes(localScale));
 
-            if (_containsRotation)
-            {
-                info.AddValue("rotation.x", rotation.x);
-                info.AddValue("rotation.y", rotation.y);
-                info.AddValue("rotation.z", rotation.z);
-                info.AddValue("rotation.w", rotation.w);
-            }
-
-            if (_containsScale)
-            {
-                info.AddValue("localScale.x", localScale.x);
-                info.AddValue("localScale.y", localScale.y);
-                info.AddValue("localScale.z", localScale.z);
-            }
+            return bytes;
         }
-
-        public bool HasPosition() { return _containsPosition; }
-        public bool HasRotation() { return _containsRotation; }
-        public bool HasScale() { return _containsScale; }
     }
 }

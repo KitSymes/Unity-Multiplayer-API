@@ -1,5 +1,6 @@
 using KitSymes.GTRP.Packets;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace KitSymes.GTRP
@@ -27,18 +28,28 @@ namespace KitSymes.GTRP
             if (!networkObject.IsSpawned())
                 return;
             if (HasChanged())
-                networkObject.AddUDPPacket(CreateDynamicSyncPacket());
+                networkObject.AddUDPPacket(CreateSyncPacket(true));
         }
 
         public bool IsOwner()
         {
-            return false;
+            return NetworkManager.IsServer();
         }
 
         public virtual void Initialise() { }
         public virtual bool HasChanged() { return false; }
-        public virtual PacketNetworkBehaviourSync CreateDynamicSyncPacket() { return new PacketNetworkBehaviourSync() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id }; }
-        public virtual PacketNetworkBehaviourSync CreateFullSyncPacket() { return new PacketNetworkBehaviourSync() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id }; }
+        public virtual List<byte> GetFullData() { return new List<byte>(); }
+        public virtual List<byte> GetDynamicData() { return new List<byte>(); }
+        public PacketNetworkBehaviourSync CreateSyncPacket(bool dynamic)
+        {
+            PacketNetworkBehaviourSync packet = new PacketNetworkBehaviourSync()
+            {
+                networkObjectID = networkObject.GetNetworkID(),
+                networkBehaviourID = _id
+            };
+            packet.data = dynamic ? GetDynamicData().ToArray() : GetFullData().ToArray();
+            return packet;
+        }
 
         public bool ShouldParseSyncPacket(PacketNetworkBehaviourSync packet) { return _lastUpdate.CompareTo(packet.timestamp) < 0; }
         public virtual int ParseSyncPacket(PacketNetworkBehaviourSync packet) { _lastUpdate = packet.timestamp; return 0; }

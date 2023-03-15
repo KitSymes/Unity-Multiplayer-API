@@ -1,14 +1,12 @@
 {
-    "name": "KitSymes.GTRP.Tests.EditMode",
+    "name": "KitSymes.GTRP.Tests.PlayMode",
     "rootNamespace": "",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "KitSymes.GTRP"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

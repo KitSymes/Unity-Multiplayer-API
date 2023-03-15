@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,16 +8,51 @@ namespace KitSymes.GTRP.Internal
 {
     public class Client
     {
-        protected BinaryFormatter _formatter;
         protected TcpClient _tcpClient;
+        protected bool _running = false;
 
         private SemaphoreSlim _tcpWriteAsyncLock;
 
         public Client()
         {
-            _formatter = new BinaryFormatter();
-
             _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
+        }
+
+        public async Task WriteTCP(byte[] data)
+        {
+            await _tcpWriteAsyncLock.WaitAsync();
+
+            try
+            {
+                await _tcpClient.GetStream().WriteAsync(data);
+                // Flush Stream
+                await _tcpClient.GetStream().FlushAsync();
+            }
+            finally
+            {
+                _tcpWriteAsyncLock.Release();
+            }
+        }
+
+        public async Task WriteTCP(Packet packet)
+        {
+            await _tcpWriteAsyncLock.WaitAsync();
+
+            try
+            {
+                byte[] buffer = PacketFormatter.Serialise(packet);
+
+                // Send Packet Size + Packet
+                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
+                await _tcpClient.GetStream().WriteAsync(buffer);
+
+                // Flush Stream
+                await _tcpClient.GetStream().FlushAsync();
+            }
+            finally
+            {
+                _tcpWriteAsyncLock.Release();
+            }
         }
 
         protected async Task<Packet> ReadTCP()
@@ -49,31 +83,7 @@ namespace KitSymes.GTRP.Internal
             }
 
             // Deserialise Packet
-            MemoryStream ms = new MemoryStream(packetBuffer);
-            return _formatter.Deserialize(ms) as Packet;
-        }
-
-        protected async Task WriteTCP(Packet packet)
-        {
-            await _tcpWriteAsyncLock.WaitAsync();
-
-            try
-            {
-                MemoryStream ms = new MemoryStream();
-                _formatter.Serialize(ms, packet);
-                byte[] buffer = ms.GetBuffer();
-
-                // Send Packet Size + Packet
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
-                await _tcpClient.GetStream().WriteAsync(buffer);
-
-                // Flush Stream
-                await _tcpClient.GetStream().FlushAsync();
-            }
-            finally
-            {
-                _tcpWriteAsyncLock.Release();
-            }
+            return PacketFormatter.Deserialise(packetBuffer);
         }
     }
 }

@@ -4,7 +4,6 @@ using System.Runtime.Serialization;
 
 namespace KitSymes.GTRP.Packets
 {
-    [Serializable]
     public class PacketNetworkBehaviourSync : Packet, ISerializable
     {
         public uint networkObjectID;
@@ -12,7 +11,6 @@ namespace KitSymes.GTRP.Packets
 
         public DateTime timestamp;
 
-        public List<byte> dataList = new List<byte>();
         public byte[] data;
 
         public PacketNetworkBehaviourSync()

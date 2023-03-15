@@ -4,15 +4,12 @@ using System.Collections.Generic;
 
 namespace KitSymes.GTRP.SourceGenerators
 {
-    public class NetworkBehaviourSyncSyntaxContextReceiver : ISyntaxContextReceiver
+    public class NetworkBehaviourSyncSyntaxContextReceiver : CustomSyntaxContextReceiver
     {
         public List<IFieldSymbol> syncVars = new List<IFieldSymbol>();
 
-        public bool debug = false;
-        public List<string> debug_strings = new List<string>();
-
         // Based off of https://medium.com/@EnescanBektas/using-source-generators-in-the-unity-game-engine-140ff0cd0dc
-        public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
+        public override void OnVisitSyntaxNode(GeneratorSyntaxContext context)
         {
             if (!context.Node.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))
                 return;
@@ -26,7 +23,7 @@ namespace KitSymes.GTRP.SourceGenerators
             {
                 IFieldSymbol fieldSymbol = context.SemanticModel.GetDeclaredSymbol(variable) as IFieldSymbol;
 
-                if (InheritsFrom(fieldSymbol.ContainingType.BaseType, "NetworkBehaviour"))
+                if (InheritsFrom(fieldSymbol.ContainingType.BaseType, "KitSymes.GTRP.NetworkBehaviour"))
                 {
                     foreach (AttributeData attributeData in fieldSymbol.GetAttributes())
                     {
@@ -38,13 +35,5 @@ namespace KitSymes.GTRP.SourceGenerators
             }
         }
 
-        public bool InheritsFrom(ITypeSymbol symbol, string target)
-        {
-            if (symbol.Name.Equals(target))
-                return true;
-            if (symbol.BaseType != null)
-                return InheritsFrom(symbol.BaseType, target);
-            return false;
-        }
     }
 }
