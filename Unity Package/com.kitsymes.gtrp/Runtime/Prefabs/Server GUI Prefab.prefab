@@ -113,7 +113,7 @@ RectTransform:
   m_Children:
   - {fileID: 4028943666933365835}
   m_Father: {fileID: 4028943666789913681}
-  m_RootOrder: 0
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -268,7 +268,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _server: {fileID: 4028943667592227581}
+  _serverButton: {fileID: 4028943666542695016}
   _serverButtonText: {fileID: 4028943666933365832}
+  _ipField: {fileID: 4028943667886043733}
+  _portField: {fileID: 4028943667455820547}
+  _clientButton: {fileID: 4028943667297061878}
   _clientButtonText: {fileID: 4028943668144848342}
 --- !u!1 &4028943666918326294
 GameObject:
@@ -543,7 +547,7 @@ RectTransform:
   m_Children:
   - {fileID: 4028943668144847401}
   m_Father: {fileID: 4028943666789913681}
-  m_RootOrder: 3
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -758,7 +762,7 @@ RectTransform:
   - {fileID: 4028943666918326293}
   - {fileID: 4028943667261195406}
   m_Father: {fileID: 4028943666789913681}
-  m_RootOrder: 2
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1069,7 +1073,7 @@ RectTransform:
   - {fileID: 4028943667430315329}
   - {fileID: 4028943666322903311}
   m_Father: {fileID: 4028943666789913681}
-  m_RootOrder: 1
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}

@@ -2,10 +2,7 @@ using KitSymes.GTRP.Internal;
 using KitSymes.GTRP.Packets;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -31,15 +28,18 @@ namespace KitSymes.GTRP
         // Server Only
         private Dictionary<Type, Action<ServerSideClient, Packet>> _serverHandlers = new();
         private bool _serverRunning = false;
-        private uint _clientCount;
-        private Dictionary<uint, ServerSideClient> _clients;
-        private TcpListener _tcpListener;
-        private UdpClient _udpClient;
-        private uint _spawnedObjectsCount;
+        private uint _serverClientCount;
+        private Dictionary<uint, ServerSideClient> _serverSideClients;
+        private TcpListener _serverTCPListener;
+        private UdpClient _serverUDPClient;
+        private uint _serverSpawnedObjectsCount;
+        public NetworkObject _serverPlayerPrefab;
+        private Dictionary<uint, NetworkObject> _serverPlayers = new();
 
         // Client Only
         private Dictionary<Type, Action<Packet>> _clientHandlers = new();
-        private LocalClient _localClient;
+        private LocalClient _clientLocalClient;
+        private uint _clientID;
 
         void SharedStart()
         {
@@ -51,7 +51,6 @@ namespace KitSymes.GTRP
 
             }
         }
-
         void SharedStop()
         {
             if (_instance != null && _instance == this && !IsClientRunning() && !IsServerRunning())
@@ -80,6 +79,19 @@ namespace KitSymes.GTRP
                 SendToAll(tcpPackets.ToArray());
                 Broadcast(udpPackets.ToArray());
             }
+            else if (IsClientRunning())
+            {
+                List<Packet> tcpPackets = new List<Packet>();
+                List<Packet> udpPackets = new List<Packet>();
+                foreach (NetworkObject networkObject in _spawnedObjects.Values)
+                {
+                    tcpPackets.AddRange(networkObject.GetTCPPackets());
+                    udpPackets.AddRange(networkObject.GetUDPPackets());
+                    networkObject.ClearPackets();
+                }
+                SendToServerTCP(tcpPackets.ToArray());
+                SendToServerUDP(udpPackets.ToArray());
+            }
         }
 
         #region Server Methods
@@ -88,28 +100,30 @@ namespace KitSymes.GTRP
             if (_serverRunning)
                 return false;
 
-            _tcpListener = new TcpListener(System.Net.IPAddress.Any, port);
+            _serverTCPListener = new TcpListener(System.Net.IPAddress.Any, port);
             try
             {
-                _tcpListener.Start();
-            } catch (SocketException)
+                _serverTCPListener.Start();
+            }
+            catch (SocketException)
             {
                 Debug.LogError("Could not start Server");
                 return false;
             }
 
             _serverRunning = true;
-            _clientCount = 0;
-            _clients = new Dictionary<uint, ServerSideClient>();
-            _spawnedObjectsCount = 0;
+            _serverClientCount = 0;
+            _serverSideClients = new Dictionary<uint, ServerSideClient>();
+            _serverSpawnedObjectsCount = 0;
 
             _ = AcceptTCPClients();
 
-            _udpClient = new UdpClient(port);
+            _serverUDPClient = new UdpClient(port);
             _ = UdpListen();
 
             SharedStart();
-            RegisterServerPacketHandler<PacketPing>(ServerOnPacketPingReceived);
+            RegisterServerPacketHandler<PacketNetworkTransformSync>(OnServerPacketTargetedReceived);
+            RegisterServerPacketHandler<PacketPing>(OnServerPacketPingReceived);
 
             OnServerStart?.Invoke();
             return true;
@@ -120,14 +134,14 @@ namespace KitSymes.GTRP
                 return;
             _serverRunning = false;
 
-            foreach (ServerSideClient c in _clients.Values)
+            foreach (ServerSideClient c in _serverSideClients.Values)
             {
                 c.Stop();
             }
-            _clients.Clear();
+            _serverSideClients.Clear();
 
-            _tcpListener.Stop();
-            _udpClient.Close();
+            _serverTCPListener.Stop();
+            _serverUDPClient.Close();
 
             _clientHandlers.Clear();
 
@@ -144,40 +158,34 @@ namespace KitSymes.GTRP
         {
             while (_serverRunning)
             {
-                Task<TcpClient> task = _tcpListener.AcceptTcpClientAsync();
+                Task<TcpClient> task = _serverTCPListener.AcceptTcpClientAsync();
                 try
                 {
                     await task;
                     // Increment _clientCount first, because we want to count clients normally, as ID 0 represents the Server (For things such as ownerID)
-                    _clientCount++;
-                    ServerSideClient c = new ServerSideClient(this, _clientCount, task.Result);
-                    _clients.Add(_clientCount, c);
+                    _serverClientCount++;
+                    ServerSideClient c = new ServerSideClient(this, _serverClientCount, task.Result);
+                    _serverSideClients.Add(c.GetID(), c);
+                    SendTo(c, new PacketServerInfo() { yourClientID = c.GetID() });
                     if (_spawnedObjects.Count > 0)
                     {
                         List<Packet> packets = new List<Packet>();
                         foreach (NetworkObject obj in _spawnedObjects.Values)
                         {
-                            packets.Add(new PacketSpawnObject
-                            {
-                                prefabID = obj.GetPrefabID(),
-                                objectNetworkID = obj.GetNetworkID(),
-                                ownerNetworkID = obj.GetOwnerID(),
-                                positionX = obj.transform.position.x,
-                                positionY = obj.transform.position.y,
-                                positionZ = obj.transform.position.z,
-                                rotationX = obj.transform.rotation.x,
-                                rotationY = obj.transform.rotation.y,
-                                rotationZ = obj.transform.rotation.z,
-                                rotationW = obj.transform.rotation.w,
-                                localScaleX = obj.transform.localScale.x,
-                                localScaleY = obj.transform.localScale.y,
-                                localScaleZ = obj.transform.localScale.z,
-                            });
+                            packets.Add(obj.GetSpawnPacket());
                             packets.AddRange(obj.GetAllFullSyncPackets());
                         }
                         SendTo(c, packets.ToArray());
                     }
                     Debug.Log("Accepted a Connection");
+
+                    if (_serverPlayerPrefab != null)
+                    {
+                        NetworkObject playerNetworkObject = UnityEngine.Object.Instantiate(_serverPlayerPrefab);
+                        playerNetworkObject.ChangeOwnership(c.GetID());
+                        Spawn(playerNetworkObject);
+                        _serverPlayers.Add(c.GetID(), playerNetworkObject);
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
@@ -192,8 +200,25 @@ namespace KitSymes.GTRP
             {
                 try
                 {
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    Debug.Log("Received Udp");
+                    UdpReceiveResult result = await _serverUDPClient.ReceiveAsync();
+
+                    foreach (ServerSideClient client in _serverSideClients.Values)
+                    {
+                        if (result.RemoteEndPoint.Equals(client.GetUdpEndPoint()))
+                        {
+                            try
+                            {
+                                // Deserialise Packet
+                                Packet packet = PacketFormatter.Deserialise(result.Buffer);
+                                ServerPacketReceived(client, packet);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning(ex);
+                            }
+                            break;
+                        }
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
@@ -204,14 +229,21 @@ namespace KitSymes.GTRP
 
         public void Disconnect(uint id)
         {
-            if (!_clients.ContainsKey(id))
+            if (!_serverSideClients.ContainsKey(id))
                 return;
 
             Debug.Log("SERVER: [" + id + "] Client disconnecting");
 
-            ServerSideClient client = _clients[id];
+            ServerSideClient client = _serverSideClients[id];
             client.Stop();
-            _clients.Remove(id);
+            _serverSideClients.Remove(id);
+
+            if (_serverPlayers.ContainsKey(id))
+            {
+                NetworkObject networkObject = _serverPlayers[id];
+                UnityEngine.Object.Destroy(networkObject.gameObject);
+                _serverPlayers.Remove(id);
+            }
         }
 
         // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
@@ -236,13 +268,13 @@ namespace KitSymes.GTRP
         /// <param name="packets">The packets to send</param>
         public void SendTo(uint clientID, params Packet[] packets)
         {
-            if (!_clients.ContainsKey(clientID))
+            if (!_serverSideClients.ContainsKey(clientID))
             {
                 Debug.LogError("Attempted to send packet to invalid clientID " + clientID);
                 return;
             }
 
-            SendTo(_clients[clientID], packets);
+            SendTo(_serverSideClients[clientID], packets);
         }
         /// <summary>
         /// Send packets to a specific Client over TCP
@@ -287,7 +319,7 @@ namespace KitSymes.GTRP
                 packetBuffer.AddRange(buffer);
             }
 
-            foreach (ServerSideClient client in _clients.Values)
+            foreach (ServerSideClient client in _serverSideClients.Values)
                 _ = client.WriteTCP(packetBuffer.ToArray());
         }
 
@@ -306,14 +338,23 @@ namespace KitSymes.GTRP
                 // Prepare Packet
                 byte[] bytes = PacketFormatter.Serialise(packet);
 
-                foreach (ServerSideClient client in _clients.Values)
+                foreach (ServerSideClient client in _serverSideClients.Values)
                     if (client.GetUdpEndPoint() != null)
-                        _udpClient.SendAsync(bytes, bytes.Length, client.GetUdpEndPoint());
+                        _serverUDPClient.SendAsync(bytes, bytes.Length, client.GetUdpEndPoint());
             }
 
             //foreach (Client client in _clients.Values)
             //    if (client.GetUdpEndPoint() != null)
             //        _udpClient.SendAsync(packetBuffer.ToArray(), packetBuffer.Count, client.GetUdpEndPoint());
+        }
+
+        // Static Functions
+        public static bool IsServer()
+        {
+            if (_instance == null)
+                return false;
+
+            return _instance.IsServerRunning();
         }
 
         public void Spawn(NetworkObject obj)
@@ -330,28 +371,13 @@ namespace KitSymes.GTRP
                 return;
             }
 
-            _spawnedObjects[_spawnedObjectsCount] = obj;
-            obj.Spawn(_spawnedObjectsCount, 0);
-            _spawnedObjectsCount++;
+            _spawnedObjects[_serverSpawnedObjectsCount] = obj;
+            obj.Spawn(_serverSpawnedObjectsCount, obj.GetOwnerID());
+            _serverSpawnedObjectsCount++;
             ExecuteEvents.Execute<INetworkMessageTarget>(obj.gameObject, null, (x, y) => x.OnServerStart());
 
             List<Packet> packets = new List<Packet>();
-            packets.Add(new PacketSpawnObject
-            {
-                prefabID = obj.GetPrefabID(),
-                objectNetworkID = obj.GetNetworkID(),
-                ownerNetworkID = obj.GetOwnerID(),
-                positionX = obj.transform.position.x,
-                positionY = obj.transform.position.y,
-                positionZ = obj.transform.position.z,
-                rotationX = obj.transform.rotation.x,
-                rotationY = obj.transform.rotation.y,
-                rotationZ = obj.transform.rotation.z,
-                rotationW = obj.transform.rotation.w,
-                localScaleX = obj.transform.localScale.x,
-                localScaleY = obj.transform.localScale.y,
-                localScaleZ = obj.transform.localScale.z,
-            });
+            packets.Add(obj.GetSpawnPacket());
             packets.AddRange(obj.GetAllFullSyncPackets());
 
             SendToAll(packets.ToArray());
@@ -360,7 +386,7 @@ namespace KitSymes.GTRP
         {
             if (_instance == null)
             {
-                Debug.LogError("Tried to Spawn " + obj.name + " with no server running");
+                Debug.LogError("Tried to Spawn " + obj.name + " with no instance running");
                 return;
             }
 
@@ -415,51 +441,61 @@ namespace KitSymes.GTRP
         {
             if (_instance == null)
             {
-                Debug.LogError("Tried to Despawn " + networkObject.name + " with no server running");
+                Debug.LogError("Tried to Despawn " + networkObject.name + " with no instance running");
                 return;
             }
 
             _instance.Despawn(networkObject.GetNetworkID(), networkObject);
         }
-
-        public static bool IsServer()
-        {
-            if (_instance == null)
-                return false;
-
-            return _instance.IsServerRunning();
-        }
         #endregion
 
         #region Server Handlers
-        public void ServerOnPacketPingReceived(ServerSideClient sender, PacketPing packet)
+        public void OnServerPacketPingReceived(ServerSideClient sender, PacketPing packet)
         {
             Debug.Log($"{sender.GetID()} Ping");
             _ = sender.WriteTCP(new PacketPong());
+        }
+
+        private void OnServerPacketTargetedReceived(ServerSideClient sender, PacketTargeted packet)
+        {
+            // Validate Packet
+            if (!_spawnedObjects.ContainsKey(packet.target))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.target];
+            if (networkObject.GetOwnerID() != sender.GetID())
+                return;
+            if (!networkObject.HasAuthority())
+                return;
+
+            ExecuteEvents.Execute<INetworkMessageTarget>(networkObject.gameObject, null,
+                (x, y) => x.OnPacketReceive(packet));
         }
         #endregion
 
         #region Client Methods
         public async Task ClientStart(string ip = "127.0.0.1", int port = 25565)
         {
-            if (_localClient != null || IsClientRunning())
+            if (_clientLocalClient != null || IsClientRunning())
                 throw new ClientException("Client is already running");
 
-            _localClient = new LocalClient(this, ip, port);
-            bool connected = await _localClient.Connect();
+            _clientLocalClient = new LocalClient(this, ip, port);
+            bool connected = await _clientLocalClient.Connect();
             if (!connected)
             {
-                _localClient.Stop();
-                _localClient = null;
+                _clientLocalClient.Stop();
+                _clientLocalClient = null;
                 throw new ClientException("Client failed to connect");
             }
 
             SharedStart();
+            RegisterClientPacketHandler<PacketServerInfo>(OnClientPacketServerInfoReceived);
             RegisterClientPacketHandler<PacketPong>(OnClientPacketPongReceived);
             RegisterClientPacketHandler<PacketSpawnObject>(OnClientPacketSpawnObjectReceived);
             RegisterClientPacketHandler<PacketDespawnObject>(OnClientPacketDespawnObjectReceived);
             RegisterClientPacketHandler<PacketNetworkTransformSync>(OnClientPacketTargetedReceived);
             RegisterClientPacketHandler<PacketNetworkBehaviourSync>(OnClientPacketNetworkBehaviourSyncReceived);
+            RegisterClientPacketHandler<PacketOwnershipChange>(OnClientPacketOwnershipChangeReceived);
+            RegisterClientPacketHandler<PacketAuthorityChange>(OnClientPacketAuthorityChangeReceived);
 
             OnClientStart?.Invoke();
         }
@@ -468,8 +504,8 @@ namespace KitSymes.GTRP
             if (!IsClientRunning())
                 return;
 
-            _localClient.Stop();
-            _localClient = null;
+            _clientLocalClient.Stop();
+            _clientLocalClient = null;
 
             _clientHandlers.Clear();
 
@@ -479,7 +515,7 @@ namespace KitSymes.GTRP
         }
         public bool IsClientRunning()
         {
-            return _localClient != null && _localClient.IsRunning();
+            return _clientLocalClient != null && _clientLocalClient.IsRunning();
         }
 
         // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
@@ -517,9 +553,8 @@ namespace KitSymes.GTRP
                 packetBuffer.AddRange(buffer);
             }
 
-            _ = _localClient.WriteTCP(packetBuffer.ToArray());
+            _ = _clientLocalClient.WriteTCP(packetBuffer.ToArray());
         }
-
         /// <summary>
         /// Send packets to the Server over UDP
         /// </summary>
@@ -529,16 +564,36 @@ namespace KitSymes.GTRP
             if (packets.Length <= 0)
                 return;
 
-            //List<byte> packetBuffer = new List<byte>();
             foreach (Packet packet in packets)
             {
                 // Prepare Packet
                 byte[] buffer = PacketFormatter.Serialise(packet);
 
-                foreach (ServerSideClient client in _clients.Values)
-                    if (client.GetUdpEndPoint() != null)
-                        _udpClient.SendAsync(buffer, buffer.Length, client.GetUdpEndPoint());
+                _ = _clientLocalClient.WriteUDP(buffer);
             }
+        }
+
+        // Static Functions
+        public static bool IsClient()
+        {
+            if (_instance == null)
+                return false;
+
+            return _instance.IsClientRunning();
+        }
+        public static uint GetClientID()
+        {
+            if (_instance == null)
+            {
+                Debug.LogError("Tried to GetClientID with no instance running");
+                return 0;
+            }
+            if (!_instance.IsClientRunning())
+            {
+                Debug.LogError("Tried to GetClientID with no client running");
+                return 0;
+            }
+            return _instance._clientID;
         }
         #endregion
 
@@ -548,11 +603,20 @@ namespace KitSymes.GTRP
             Debug.Log("Pong");
         }
 
+        private void OnClientPacketServerInfoReceived(PacketServerInfo packet)
+        {
+            _clientID = packet.yourClientID;
+        }
+
         private void OnClientPacketSpawnObjectReceived(PacketSpawnObject packet)
         {
             // Do not spawn duplicate if this client is host
-            if (IsServerRunning())
+            if (IsServerRunning() && _spawnedObjects.ContainsKey(packet.objectNetworkID))
+            {
+                NetworkObject temp = _spawnedObjects[packet.objectNetworkID];
+                temp.HostSpawn(packet);
                 return;
+            }
 
             // Validate Packet
             if (packet.prefabID >= _spawnableObjects.Count)
@@ -560,15 +624,13 @@ namespace KitSymes.GTRP
             if (_spawnedObjects.ContainsKey(packet.objectNetworkID))
                 return;
 
-            GameObject newObj = UnityEngine.Object.Instantiate(_spawnableObjects[(int)packet.prefabID].gameObject);
-            newObj.transform.SetPositionAndRotation(packet.GetPosition(), packet.GetRotation());
-            newObj.transform.localScale = packet.GetScale();
+            NetworkObject networkObject = UnityEngine.Object.Instantiate(_spawnableObjects[(int)packet.prefabID]);
+            networkObject.gameObject.transform.SetPositionAndRotation(packet.GetPosition(), packet.GetRotation());
+            networkObject.gameObject.transform.localScale = packet.GetScale();
 
-            NetworkObject networkObject = newObj.GetComponent<NetworkObject>();
             _spawnedObjects[packet.objectNetworkID] = networkObject;
             networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID);
         }
-
         private void OnClientPacketDespawnObjectReceived(PacketDespawnObject packet)
         {
             // Do not spawn duplicate if this client is host
@@ -583,6 +645,26 @@ namespace KitSymes.GTRP
             _spawnedObjects.Remove(packet.objectNetworkID);
         }
 
+        private void OnClientPacketOwnershipChangeReceived(PacketOwnershipChange packet)
+        {
+            // Validate Packet
+            if (_spawnedObjects.ContainsKey(packet.networkObjectID))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
+            uint oldValue = networkObject.GetOwnerID();
+            networkObject.ChangeOwnership(packet.clientID);
+            ExecuteEvents.Execute<INetworkMessageTarget>(networkObject.gameObject, null, (x, y) => x.OnOwnershipChange(oldValue, packet.clientID));
+        }
+        private void OnClientPacketAuthorityChangeReceived(PacketAuthorityChange packet)
+        {
+            // Validate Packet
+            if (_spawnedObjects.ContainsKey(packet.networkObjectID))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
+            bool oldValue = networkObject.HasAuthority();
+            networkObject.ChangeAuthority(packet.hasAuthority);
+            ExecuteEvents.Execute<INetworkMessageTarget>(networkObject.gameObject, null, (x, y) => x.OnAuthorityChange(oldValue, packet.hasAuthority));
+        }
         private void OnClientPacketNetworkBehaviourSyncReceived(PacketNetworkBehaviourSync packet)
         {
             // Do not duplicate if this client is host
@@ -622,11 +704,17 @@ namespace KitSymes.GTRP
                 return;
             _spawnableObjects = spawnableObjects;
         }
+        public void SetPlayerPrefab(NetworkObject playerPrefab)
+        {
+            if (IsServerRunning() || IsClientRunning())
+                return;
+            _serverPlayerPrefab = playerPrefab;
+        }
 
         public void BeginProcessingPackets()
         {
             if (IsClientRunning())
-                _localClient.BeginProcessingPackets();
+                _clientLocalClient.BeginProcessingPackets();
         }
     }
 }

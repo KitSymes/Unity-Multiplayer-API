@@ -31,11 +31,6 @@ namespace KitSymes.GTRP
                 networkObject.AddUDPPacket(CreateSyncPacket(true));
         }
 
-        public bool IsOwner()
-        {
-            return NetworkManager.IsServer();
-        }
-
         public virtual void Initialise() { }
         public virtual bool HasChanged() { return false; }
         public virtual List<byte> GetFullData() { return new List<byte>(); }
@@ -55,7 +50,9 @@ namespace KitSymes.GTRP
         public virtual int ParseSyncPacket(PacketNetworkBehaviourSync packet) { _lastUpdate = packet.timestamp; return 0; }
 
         public virtual void OnServerStart() { }
+        public virtual void OnClientStart() { }
         public virtual void OnPacketReceive(Packet packet) { }
-
+        public virtual void OnOwnershipChange(uint oldClient, uint newClient) { }
+        public virtual void OnAuthorityChange(bool oldValue, bool newValue) { }
     }
 }

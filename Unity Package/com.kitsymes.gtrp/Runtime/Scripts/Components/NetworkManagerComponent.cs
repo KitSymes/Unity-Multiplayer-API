@@ -6,7 +6,7 @@ namespace KitSymes.GTRP.Components
 {
     public class NetworkManagerComponent : MonoBehaviour
     {
-        private NetworkManager _networkManager;
+        private NetworkManager _networkManager = new NetworkManager();
 
         [Tooltip("The IP a Client will attempt to connect to.")]
         public string ip = "127.0.0.1";
@@ -21,11 +21,14 @@ namespace KitSymes.GTRP.Components
         [Tooltip("The List of Spawnable Prefabs.\nPrefabs must have a NetworkObject component.")]
         public List<NetworkObject> spawnablePrefabs;
 
+        [Tooltip("The Player Prefabs to spawn (and give ownership to) for each client.\nMust have a NetworkObject component.")]
+        public NetworkObject playerPrefab;
+
         void Awake()
         {
-            _networkManager = new NetworkManager();
             _networkManager.SetSpawnableObjects(spawnablePrefabs);
-            _networkManager.OnServerStart += OnServerStart;
+            _networkManager.SetPlayerPrefab(playerPrefab);
+            _networkManager.OnServerStart += OnStartServer;
             _networkManager.OnServerStop += OnServerStop;
             _networkManager.OnClientStart += OnClientStart;
             _networkManager.OnClientStop += OnClientStop;
@@ -60,13 +63,14 @@ namespace KitSymes.GTRP.Components
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
+        public NetworkManager GetNetworkManager() { return _networkManager; }
+
         #region Server Methods
         public void ServerStart()
         {
             DontDestroyOnLoad(gameObject);
             bool started = _networkManager.ServerStart(port);
         }
-
         public void ServerStop()
         {
             _networkManager.ServerStop();
@@ -84,7 +88,6 @@ namespace KitSymes.GTRP.Components
             DontDestroyOnLoad(gameObject);
             _ = _networkManager.ClientStart(ip, port);
         }
-
         public void ClientStop()
         {
             _networkManager.ClientStop();
@@ -96,55 +99,57 @@ namespace KitSymes.GTRP.Components
         }
         #endregion
 
-        // Events
-        public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        #region Events
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (mode == LoadSceneMode.Single && scene.path == "Assets/" + onlineScene + ".unity")
                 _networkManager.BeginProcessingPackets();
         }
 
-        public void OnSharedStart()
+        void SharedStart()
         {
             if (!IsServer() || !IsClient())
             {
                 SceneManager.LoadScene(onlineScene);
             }
         }
-
-        public void OnSharedStop()
+        void SharedStop()
         {
             if (!IsServer() && !IsClient())
             {
+                Destroy(gameObject);
                 SceneManager.LoadScene(offlineScene);
             }
         }
 
-        public void OnServerStart()
+        void OnStartServer()
         {
-            OnSharedStart();
+            SharedStart();
 
             Debug.Log("Server Started");
         }
-
-        public void OnServerStop()
+        void OnServerStop()
         {
-            OnSharedStop();
+            SharedStop();
 
             Debug.Log("Server Stopped");
         }
 
-        public void OnClientStart()
+        void OnClientStart()
         {
-            OnSharedStart();
+            SharedStart();
+
+            if (IsServer())
+                _networkManager.BeginProcessingPackets();
 
             Debug.Log("Client Started");
         }
-
-        public void OnClientStop()
+        void OnClientStop()
         {
-            OnSharedStop();
+            SharedStop();
 
             Debug.Log("Client Stopped");
         }
+        #endregion
     }
 }

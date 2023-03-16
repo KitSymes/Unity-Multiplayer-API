@@ -51,8 +51,8 @@ namespace KitSymes.GTRP.Internal
 
             Debug.Log("Connected");
 
-            ReceiveTcp();
-            ReceiveUdp();
+            ReceiveTCP();
+            ReceiveUDP();
 
             await WriteTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint as IPEndPoint });
             return true;
@@ -65,7 +65,7 @@ namespace KitSymes.GTRP.Internal
             _udpClient?.Close();
         }
 
-        public async void ReceiveTcp()
+        public async void ReceiveTCP()
         {
             while (_running)
             {
@@ -74,7 +74,7 @@ namespace KitSymes.GTRP.Internal
                     Packet packet = await ReadTCP();
                     if (packet == null)
                         break;
-                    Debug.Log("Recieved " + packet.GetType());
+                    // Debug.Log("Recieved " + packet.GetType());
                     ProcessPacket(packet);
                 }
                 catch (IOException)
@@ -97,7 +97,7 @@ namespace KitSymes.GTRP.Internal
             Debug.Log("Client stopping receiving TCP");
         }
 
-        public async void ReceiveUdp()
+        public async void ReceiveUDP()
         {
             while (_running)
             {
@@ -115,6 +115,11 @@ namespace KitSymes.GTRP.Internal
                 }
             }
             Debug.Log("Client stopping Receiving UDP");
+        }
+
+        public async Task WriteUDP(byte[] bytes)
+        {
+            await _udpClient.SendAsync(bytes, bytes.Length);
         }
 
         private void ProcessPacket(Packet packet)

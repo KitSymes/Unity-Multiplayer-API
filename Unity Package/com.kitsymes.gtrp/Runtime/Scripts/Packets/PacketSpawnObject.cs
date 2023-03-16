@@ -8,6 +8,7 @@ namespace KitSymes.GTRP.Packets
         public uint prefabID;
         public uint objectNetworkID;
         public uint ownerNetworkID;
+        public bool ownerHasAuthority;
 
         public float positionX, positionY, positionZ;
         public float rotationX, rotationY, rotationZ, rotationW;

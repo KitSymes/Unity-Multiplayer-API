@@ -51,8 +51,8 @@ namespace KitSymes.GTRP.Components
 
         void Update()
         {
-            // If the object isn't spawned or is not the server, skip
-            if (!networkObject.IsSpawned() || !NetworkManager.IsServer())
+            // If the object isn't spawned, is not owned, or does not have authority, skip
+            if (!networkObject.IsSpawned() || !networkObject.IsOwner() || !networkObject.HasAuthority())
                 return;
 
             // Check to see if the position, rotation and scale have changed since last frame

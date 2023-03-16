@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 4244420779793585724}
   - component: {fileID: 4244420779793585725}
   - component: {fileID: 4244420779793585726}
+  - component: {fileID: 1128390478322617960}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: Ball
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -93,9 +94,17 @@ SphereCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4244420779793585727}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4244420779793585726
@@ -108,5 +117,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 263c99618394b2f4fb2977a5a9908fe0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _prefabID: 1
+  _hasAuthoriy: 0
+--- !u!114 &1128390478322617960
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4244420779793585727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca4f44a4f2c72d7499ac518e0980f056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

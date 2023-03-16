@@ -345,7 +345,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
+  orthographic: 1
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:
@@ -426,12 +426,16 @@ PrefabInstance:
       value: Scenes/OfflineScene
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: playerPrefab
+      value: 
+      objectReference: {fileID: 5351177282266957140, guid: d65fbade148703449b4844166572e940, type: 3}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _offlineScene
       value: Scenes/OfflineScene
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: spawnablePrefabs.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _spawnableObjects.Array.size

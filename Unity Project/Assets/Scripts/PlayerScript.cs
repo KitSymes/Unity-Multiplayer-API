@@ -3,7 +3,7 @@ using UnityEngine;
 
 public partial class PlayerScript : NetworkBehaviour
 {
-    [SyncVar]
+    /*[SyncVar]
     public int dummy = 0;
 
     [SyncVarAttribute]
@@ -22,7 +22,9 @@ public partial class PlayerScript : NetworkBehaviour
     [SyncVar]
     public double testDouble = 6.1d;
     [SyncVar]
-    public string testString = "no";
+    public string testString = "no";*/
+    [SyncVar]
+    public float paddleSpeed = 1.0f;
 
     // Start is called before the first frame update
     void Start()
@@ -33,11 +35,12 @@ public partial class PlayerScript : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!IsOwner())
+        if (!networkObject.IsOwner() || !networkObject.HasAuthority())
             return;
-        if (Input.GetKey(KeyCode.A))
-            transform.position -= new Vector3(1.0f, 0.0f) * Time.deltaTime;
-        if (Input.GetKey(KeyCode.D))
-            transform.position += new Vector3(1.0f, 0.0f) * Time.deltaTime;
+
+        if (Input.GetKey(KeyCode.W))
+            transform.position += Vector3.up * Time.deltaTime * paddleSpeed;
+        if (Input.GetKey(KeyCode.S))
+            transform.position -= Vector3.up * Time.deltaTime * paddleSpeed;
     }
 }
