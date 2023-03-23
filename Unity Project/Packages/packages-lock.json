@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.kitsymes.gtrp": {
-      "version": "file:C:/Users/Charz/Documents/Unity/GTRP/Unity Package/com.kitsymes.gtrp",
+      "version": "file:../../Unity Package/com.kitsymes.gtrp",
       "depth": 0,
       "source": "local",
       "dependencies": {}
