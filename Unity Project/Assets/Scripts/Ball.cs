@@ -1,24 +1,26 @@
 using KitSymes.GTRP;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class Ball : NetworkBehaviour
+public partial class Ball : NetworkBehaviour
 {
     Vector3 direction;
     public NetworkObject lastTouched;
 
+    public float startSpeed = 1.0f;
+    [SyncVar]
+    public float ballSpeed = 1.0f;
+
     void Start()
     {
-
+        ballSpeed = startSpeed;
     }
 
     void FixedUpdate()
     {
         if (!networkObject.IsServer())
             return;
-        transform.position += direction * Time.fixedDeltaTime;
+
+        transform.position += direction * Time.fixedDeltaTime * ballSpeed;
     }
 
     void OnCollisionEnter(Collision collision)
@@ -28,8 +30,10 @@ public class Ball : NetworkBehaviour
         if (collision.gameObject.CompareTag("Player"))
         {
             Vector3 dif = transform.position - collision.transform.position;
+            dif.y /= 5.0f;
             direction = dif.normalized;
             lastTouched = collision.gameObject.GetComponent<NetworkObject>();
+            ballSpeed += 0.2f;
         }
     }
 

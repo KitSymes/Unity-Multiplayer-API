@@ -67,14 +67,14 @@ namespace KitSymes.GTRP
             }
         }
 
-        float timeSinceLastTick = 0;
+        float _timeSinceLastTick = 0;
 
         public void Update()
         {
-            timeSinceLastTick += Time.deltaTime;
-            if (timeSinceLastTick < 1.0f / _tickRate)
+            _timeSinceLastTick += Time.deltaTime;
+            if (_timeSinceLastTick < 1.0f / _tickRate)
                 return;
-            timeSinceLastTick = 0.0f;
+            _timeSinceLastTick = 0.0f;
             foreach (NetworkObject networkObject in _spawnedObjects.Values)
                 networkObject.Tick();
 
@@ -136,6 +136,7 @@ namespace KitSymes.GTRP
 
             SharedStart();
             RegisterServerPacketHandler<PacketPing>(OnServerPacketPingReceived);
+            //RegisterServerPacketHandler<PacketConnect>(OnServerPacketConnectReceived);
             RegisterServerPacketHandler<PacketServerRPC>(OnServerPacketServerRPCReceived);
             RegisterServerPacketHandler<PacketNetworkTransformSync>(OnServerPacketTargetedReceived);
 
@@ -184,18 +185,6 @@ namespace KitSymes.GTRP
                     ServerSideClient c = new ServerSideClient(this, _serverClientCount, task.Result);
                     _serverSideClients.Add(c.GetID(), c);
 
-                    List<Packet> packets = new List<Packet>();
-
-                    if (_spawnedObjects.Count > 0)
-                    {
-                        foreach (NetworkObject obj in _spawnedObjects.Values)
-                        {
-                            //Debug.Log($"Spawning {obj} at {obj.transform.position}");
-                            packets.Add(obj.GetSpawnPacket());
-                            packets.AddRange(obj.GetAllFullSyncPackets());
-                        }
-                    }
-
                     if (_serverPlayerPrefab != null)
                     {
                         NetworkObject playerNetworkObject = UnityEngine.Object.Instantiate(_serverPlayerPrefab);
@@ -204,9 +193,6 @@ namespace KitSymes.GTRP
                         Spawn(playerNetworkObject);
                         _serverPlayers.Add(c.GetID(), playerNetworkObject);
                     }
-
-                    packets.Add(new PacketServerInfo() { yourClientID = c.GetID() });
-                    SendTo(c, packets.ToArray());
 
                     OnPlayerConnect?.Invoke(c.GetID());
                 }
@@ -306,7 +292,7 @@ namespace KitSymes.GTRP
         /// </summary>
         /// <param name="client">The target Client</param>
         /// <param name="packets">The packets to send</param>
-        private void SendTo(ServerSideClient client, params Packet[] packets)
+        public void SendTo(ServerSideClient client, params Packet[] packets)
         {
             if (packets.Length <= 0)
                 return;
@@ -662,7 +648,7 @@ namespace KitSymes.GTRP
 
         private void OnClientPacketSpawnObjectReceived(PacketSpawnObject packet)
         {
-            Debug.Log($"Spawn: {packet.prefabID} {packet.ownerHasAuthority} {packet.positionX}");
+            //Debug.Log($"Spawn: {packet.prefabID} {packet.ownerHasAuthority} {packet.positionX}");
 
             // Do not spawn duplicate if this client is host
             if (IsServerRunning() && _spawnedObjects.ContainsKey(packet.objectNetworkID))
@@ -674,13 +660,19 @@ namespace KitSymes.GTRP
 
             // Validate Packet
             if (packet.prefabID >= _spawnableObjects.Count)
+            {
+                Debug.LogError($"Server tried spawning {packet.prefabID}, but it's not in _spawnableObjects! (Max {_spawnableObjects.Count})");
                 return;
+            }
             if (_spawnedObjects.ContainsKey(packet.objectNetworkID))
+            {
+                Debug.LogError($"Server tried spawning {packet.objectNetworkID}, but it has already been spawned!");
                 return;
+            }
 
             NetworkObject networkObject = UnityEngine.Object.Instantiate(_spawnableObjects[(int)packet.prefabID]);
-            networkObject.gameObject.transform.SetPositionAndRotation(packet.GetPosition(), packet.GetRotation());
-            networkObject.gameObject.transform.localScale = packet.GetScale();
+            networkObject.gameObject.transform.SetPositionAndRotation(packet.position, packet.rotation);
+            networkObject.gameObject.transform.localScale = packet.localScale;
 
             _spawnedObjects[packet.objectNetworkID] = networkObject;
             networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID);
@@ -782,5 +774,7 @@ namespace KitSymes.GTRP
             if (IsClientRunning())
                 _clientLocalClient.SceneLoaded();
         }
+
+        public Dictionary<uint, NetworkObject> GetSpawnedObjects() { return _spawnedObjects; }
     }
 }

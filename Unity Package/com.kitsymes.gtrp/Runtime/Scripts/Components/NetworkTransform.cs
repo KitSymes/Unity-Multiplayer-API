@@ -63,7 +63,7 @@ namespace KitSymes.GTRP.Components
 
             if (!(isServer && serverControlled) && !(isOwned && !serverControlled))
                 return;
-            Debug.Log($"Ticked {gameObject}");
+            //Debug.Log($"Ticked {gameObject}");
 
             /*
             // If we are the server, the object has authority _and_ we don't own it, skip
@@ -95,7 +95,7 @@ namespace KitSymes.GTRP.Components
             // If something has changed, we need to update
             if (_positionChanged || _rotationChanged || _scaleChanged)
             {
-                // Debug.Log($"{gameObject} moved to {transform.position}");
+                //Debug.Log($"{gameObject} moved to {transform.position}");
                 // Feed it all information as it filters itself
                 networkObject.AddUDPPacket(new PacketNetworkTransformSync()
                 {

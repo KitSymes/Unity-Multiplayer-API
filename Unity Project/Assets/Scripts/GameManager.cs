@@ -1,6 +1,4 @@
 using KitSymes.GTRP;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,7 +28,7 @@ public partial class GameManager : NetworkBehaviour
         NetworkManager.GetInstance().OnPlayerDisconnect += OnPlayerDisonnect;
         _ball = Instantiate(_ballPrefab).GetComponent<Ball>();
         NetworkManager.Spawn(_ball.gameObject);
-        _ball.SetDirection(new Vector3());
+        ResetBall();
     }
 
     void OnPlayerConnect(uint id)
@@ -60,8 +58,15 @@ public partial class GameManager : NetworkBehaviour
         if (playerR == player)
             playerR = null;
 
-        _ball.SetDirection(new Vector3(0.0f, 0.0f));
+        ResetBall();
+    }
+
+    public void ResetBall()
+    {
         _ball.transform.position = new Vector3();
+        _ball.SetDirection(new Vector3(0.0f, 0.0f));
+        _ball.lastTouched = null;
+        _ball.ballSpeed = _ball.startSpeed;
     }
 
     public void OutOfBounds()
@@ -72,26 +77,23 @@ public partial class GameManager : NetworkBehaviour
             LScore();
         else
         {
-            _ball.transform.position = new Vector3();
+            ResetBall();
             _ball.SetDirection(new Vector3(1.0f, 0.0f));
-            _ball.lastTouched = null;
         }
     }
 
     public void LScore()
     {
         scoreL++;
-        _ball.transform.position = new Vector3();
+        ResetBall();
         _ball.SetDirection(new Vector3(1.0f, 0.0f));
-        _ball.lastTouched = null;
     }
 
     public void RScore()
     {
         scoreR++;
-        _ball.transform.position = new Vector3();
+        ResetBall();
         _ball.SetDirection(new Vector3(-1.0f, 0.0f));
-        _ball.lastTouched = null;
     }
 
     void Update()
@@ -107,13 +109,7 @@ public partial class GameManager : NetworkBehaviour
         }
     }
 
-    void ScoreLChanged(int prev, int newV)
-    {
-        _scoreLText.text = "" + newV;
-    }
+    void ScoreLChanged(int prev, int newV) { _scoreLText.text = "" + newV; }
 
-    void ScoreRChanged(int prev, int newV)
-    {
-        _scoreRText.text = "" + newV;
-    }
+    void ScoreRChanged(int prev, int newV) { _scoreRText.text = "" + newV; }
 }

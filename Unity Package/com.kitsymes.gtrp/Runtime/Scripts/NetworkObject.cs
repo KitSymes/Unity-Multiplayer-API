@@ -1,5 +1,4 @@
 using KitSymes.GTRP.Packets;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -69,20 +68,13 @@ namespace KitSymes.GTRP
         {
             return new PacketSpawnObject
             {
-                prefabID = _prefabID,
-                objectNetworkID = _networkID,
-                ownerNetworkID = _ownerNetworkID,
+                prefabID          = _prefabID,
+                objectNetworkID   = _networkID,
+                ownerNetworkID    = _ownerNetworkID,
                 ownerHasAuthority = _hasAuthoriy,
-                positionX = transform.position.x,
-                positionY = transform.position.y,
-                positionZ = transform.position.z,
-                rotationX = transform.rotation.x,
-                rotationY = transform.rotation.y,
-                rotationZ = transform.rotation.z,
-                rotationW = transform.rotation.w,
-                localScaleX = transform.localScale.x,
-                localScaleY = transform.localScale.y,
-                localScaleZ = transform.localScale.z,
+                position          = transform.position,
+                rotation          = transform.rotation,
+                localScale        = transform.localScale,
             };
         }
 

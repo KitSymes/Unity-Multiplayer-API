@@ -1,11 +1,11 @@
 ﻿using KitSymes.GTRP.Packets;
-using System.IO;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
-using UnityEngine;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace KitSymes.GTRP.Internal
 {
@@ -14,6 +14,7 @@ namespace KitSymes.GTRP.Internal
         // 0 is Server, so this ID will start at 1
         private uint _id;
         private NetworkManager _networkManager;
+        private bool _connectReceived = false;
 
         private IPEndPoint _udpEndPoint;
 
@@ -36,7 +37,26 @@ namespace KitSymes.GTRP.Internal
 
         public void PacketConnectReceived(PacketConnect packet)
         {
+            if (_connectReceived)
+                return;
+            _connectReceived = true;
+
             _udpEndPoint = packet.udpEndPoint;
+
+            List<Packet> packets = new List<Packet>();
+            packets.Add(new PacketServerInfo() { yourClientID = GetID() });
+
+            if (_networkManager.GetSpawnedObjects().Count > 0)
+            {
+                foreach (NetworkObject obj in _networkManager.GetSpawnedObjects().Values)
+                {
+                    //Debug.Log($"Spawning {obj} at {obj.transform.position}");
+                    packets.Add(obj.GetSpawnPacket());
+                    packets.AddRange(obj.GetAllFullSyncPackets());
+                }
+            }
+
+            _networkManager.SendTo(this, packets.ToArray());
         }
 
         public async Task ReceiveTcp()
@@ -52,7 +72,6 @@ namespace KitSymes.GTRP.Internal
                         break;
                     }
 
-                    // TODO This could be maliciously sent multiple times - does that impact anything?
                     if (packet is PacketConnect)
                         PacketConnectReceived((PacketConnect)packet);
                     else

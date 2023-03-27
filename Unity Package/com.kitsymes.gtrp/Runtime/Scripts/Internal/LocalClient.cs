@@ -51,7 +51,7 @@ namespace KitSymes.GTRP.Internal
 
             _running = true;
 
-            Debug.Log("Connected");
+            //Debug.Log("Connected");
 
             ReceiveTCP();
             ReceiveUDP();
@@ -80,10 +80,6 @@ namespace KitSymes.GTRP.Internal
                     if (packet is PacketServerInfo)
                     {
                         _networkManager.ClientPacketReceived(packet);
-                        while (_tcpPacketQueue.Count > 0)
-                            _networkManager.ClientPacketReceived(_tcpPacketQueue.Dequeue());
-                        while (_udpPacketQueue.Count > 0)
-                            _networkManager.ClientPacketReceived(_udpPacketQueue.Dequeue());
                         _serverInfoReceived = true;
                     }
                     else
@@ -91,7 +87,7 @@ namespace KitSymes.GTRP.Internal
                 }
                 catch (IOException)
                 {
-                    Debug.Log("CLIENT: TCP Closed");
+                    //Debug.Log("CLIENT: TCP Closed");
                     break;
                 }
                 catch (Exception ex)
@@ -106,7 +102,7 @@ namespace KitSymes.GTRP.Internal
                 Debug.LogWarning("TCP Closed whilst client is still running");
                 _networkManager.ClientStop();
             }
-            Debug.Log("Client stopping receiving TCP");
+            //Debug.Log("Client stopping receiving TCP");
         }
 
         public async void ReceiveUDP()
@@ -119,17 +115,21 @@ namespace KitSymes.GTRP.Internal
 
                     // Deserialise Packet
                     Packet packet = PacketFormatter.Deserialise(result.Buffer);
-                    Debug.Log("Recieved " + packet.GetType());
+                    //Debug.Log("Recieved " + packet.GetType());
                     ProcessUDPPacket(packet);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // UDP is closing
+                    break;
                 }
                 catch (Exception ex)
                 {
                     Debug.LogException(ex);
                     break;
                 }
-                Debug.Log("we go again");
             }
-            Debug.Log("Client stopping Receiving UDP");
+            //Debug.Log("Client stopping Receiving UDP");
         }
 
         public async Task WriteUDP(byte[] bytes)
@@ -140,19 +140,17 @@ namespace KitSymes.GTRP.Internal
         private void ProcessTCPPacket(Packet packet)
         {
             if (!_sceneLoaded || !_serverInfoReceived)
-                _tcpPacketQueue.Enqueue(packet);
+                return;
             else
                 _networkManager.ClientPacketReceived(packet);
-            //Debug.Log(packet.GetType());
         }
 
         private void ProcessUDPPacket(Packet packet)
         {
             if (!_sceneLoaded || !_serverInfoReceived)
-                _udpPacketQueue.Enqueue(packet);
+                return;
             else
                 _networkManager.ClientPacketReceived(packet);
-            //Debug.Log(packet.GetType());
         }
 
         public void SceneLoaded()

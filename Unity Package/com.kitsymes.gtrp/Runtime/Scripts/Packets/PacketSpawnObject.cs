@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace KitSymes.GTRP.Packets
 {
@@ -10,12 +9,8 @@ namespace KitSymes.GTRP.Packets
         public uint ownerNetworkID;
         public bool ownerHasAuthority;
 
-        public float positionX, positionY, positionZ;
-        public float rotationX, rotationY, rotationZ, rotationW;
-        public float localScaleX, localScaleY, localScaleZ;
-
-        public Vector3 GetPosition() { return new Vector3(positionX, positionY, positionZ); }
-        public Quaternion GetRotation() { return new Quaternion(rotationX, rotationY, rotationZ, rotationW); }
-        public Vector3 GetScale() { return new Vector3(localScaleX, localScaleY, localScaleZ); }
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 localScale;
     }
 }
