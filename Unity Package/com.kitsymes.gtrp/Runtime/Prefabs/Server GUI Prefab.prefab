@@ -932,11 +932,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbb559ad00f1ee344b1e1bea17ccb203, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _networkManager:
+    _tickRate: 60
   ip: 127.0.0.1
   port: 25565
   offlineScene: 
   onlineScene: 
   spawnablePrefabs: []
+  playerPrefab: {fileID: 0}
 --- !u!1 &4028943667754926089
 GameObject:
   m_ObjectHideFlags: 0

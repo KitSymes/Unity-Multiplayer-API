@@ -6,6 +6,7 @@ namespace KitSymes.GTRP.Components
 {
     public class NetworkManagerComponent : MonoBehaviour
     {
+        [SerializeField]
         private NetworkManager _networkManager = new NetworkManager();
 
         [Tooltip("The IP a Client will attempt to connect to.")]
@@ -125,14 +126,10 @@ namespace KitSymes.GTRP.Components
         void OnStartServer()
         {
             SharedStart();
-
-            Debug.Log("Server Started");
         }
         void OnServerStop()
         {
             SharedStop();
-
-            Debug.Log("Server Stopped");
         }
 
         void OnClientStart()
@@ -141,14 +138,10 @@ namespace KitSymes.GTRP.Components
 
             if (IsServer())
                 _networkManager.BeginProcessingPackets();
-
-            Debug.Log("Client Started");
         }
         void OnClientStop()
         {
             SharedStop();
-
-            Debug.Log("Client Stopped");
         }
         #endregion
     }

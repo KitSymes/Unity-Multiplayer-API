@@ -14,9 +14,11 @@ GameObject:
   - component: {fileID: 4244420779793585725}
   - component: {fileID: 4244420779793585726}
   - component: {fileID: 1128390478322617960}
+  - component: {fileID: 958925801921656620}
+  - component: {fileID: -5499708368379846156}
   m_Layer: 0
   m_Name: Ball
-  m_TagString: Untagged
+  m_TagString: Ball
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -121,6 +123,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _prefabID: 1
   _hasAuthoriy: 0
+  _spawnOnStart: 0
 --- !u!114 &1128390478322617960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,3 +136,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca4f44a4f2c72d7499ac518e0980f056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &958925801921656620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4244420779793585727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44f30c97e8776ca4087a86d38cbd59c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lastTouched: {fileID: 0}
+--- !u!54 &-5499708368379846156
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4244420779793585727}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0

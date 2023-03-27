@@ -16,6 +16,9 @@ namespace KitSymes.GTRP
         [SerializeField]
         private bool _hasAuthoriy = false;
         private bool _spawned = false;
+        [SerializeField]
+        private bool _spawnOnStart = false;
+        private bool _isServer = false;
 
         private readonly List<Packet> _tcpPackets = new List<Packet>();
         private readonly List<Packet> _udpPackets = new List<Packet>();
@@ -25,8 +28,23 @@ namespace KitSymes.GTRP
 
         void Start()
         {
+            _isServer = NetworkManager.IsServer();
+
             if (!_spawned)
+            {
                 gameObject.SetActive(false);
+                if (_spawnOnStart)
+                    if (_isServer)
+                        NetworkManager.Spawn(gameObject);
+                    else
+                        Destroy(gameObject);
+            }
+        }
+
+        public void Tick()
+        {
+            foreach (NetworkBehaviour networkBehaviour in _networkBehaviours.Values)
+                networkBehaviour.Tick();
         }
 
         void OnDestroy()
@@ -72,6 +90,12 @@ namespace KitSymes.GTRP
         public List<Packet> GetTCPPackets() { return _tcpPackets; }
         public void AddUDPPacket(Packet packet) { _udpPackets.Add(packet); }
         public List<Packet> GetUDPPackets() { return _udpPackets; }
+        public void ClearPackets()
+        {
+            _tcpPackets.Clear();
+            _udpPackets.Clear();
+        }
+
         public List<Packet> GetAllFullSyncPackets()
         {
             List<Packet> packets = new List<Packet>();
@@ -79,10 +103,13 @@ namespace KitSymes.GTRP
                 packets.Add(networkBehaviour.CreateSyncPacket(false));
             return packets;
         }
-        public void ClearPackets()
+        public List<Packet> GetAllDynamicSyncPackets()
         {
-            _tcpPackets.Clear();
-            _udpPackets.Clear();
+            List<Packet> packets = new List<Packet>();
+            foreach (NetworkBehaviour networkBehaviour in _networkBehaviours.Values)
+                if (networkBehaviour.HasChanged())
+                    packets.Add(networkBehaviour.CreateSyncPacket(true));
+            return packets;
         }
 
         public uint GetPrefabID() { return _prefabID; }
@@ -110,7 +137,19 @@ namespace KitSymes.GTRP
         }
 
         public bool HasAuthority() { return _hasAuthoriy; }
-        public void ChangeAuthority(bool hasAuthority) { _hasAuthoriy = hasAuthority; }
+        public void ChangeAuthority(bool hasAuthority)
+        {
+            if (hasAuthority == _hasAuthoriy)
+                return;
+
+            _hasAuthoriy = hasAuthority;
+            if (_spawned && NetworkManager.IsServer())
+                _tcpPackets.Add(new PacketAuthorityChange()
+                {
+                    networkObjectID = _networkID,
+                    hasAuthority = hasAuthority
+                });
+        }
 
         public bool HasNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours.ContainsKey(networkBehaviourID); }
         public NetworkBehaviour GetNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours[networkBehaviourID]; }
@@ -127,5 +166,7 @@ namespace KitSymes.GTRP
             _isOwner = (NetworkManager.IsServer() && packet.ownerNetworkID == 0) ||
                 (NetworkManager.IsClient() && packet.ownerNetworkID == NetworkManager.GetClientID());
         }
+
+        public bool IsServer() { return _isServer; }
     }
 }

@@ -65,10 +65,10 @@ public partial class {classSymbol.Name}
 ");
 
             source.Append(AddInitialisation(fields));
-            source.Append(AddDifferenceChecker(fields));
+            source.Append(AddDifferenceChecker(fields, attributeSymbol));
             source.Append(AddGetDynamicData(fields));
             source.Append(AddGetFullData(fields));
-            source.Append(AddParseSyncPacket(fields));
+            source.Append(AddParseSyncPacket(fields, attributeSymbol));
             // Class_Post
             source.Append(@"
 }");
@@ -77,9 +77,9 @@ public partial class {classSymbol.Name}
         }
 
         public static string Initialise_Pre = @"
-    public override void Initialise()
+    public override void InitialiseSyncData()
     {
-        base.Initialise();
+        base.InitialiseSyncData();
 
 ";
         public static string Initialise_Post = @"    }
@@ -120,7 +120,7 @@ public partial class {classSymbol.Name}
     }
 ";
 
-        private string AddDifferenceChecker(IEnumerable<IFieldSymbol> fields)
+        private string AddDifferenceChecker(IEnumerable<IFieldSymbol> fields, ISymbol attributeSymbol)
         {
             StringBuilder stringBuilder = new StringBuilder(DiffCheck_Pre);
 
@@ -131,8 +131,16 @@ public partial class {classSymbol.Name}
         if ({field.Name} != _{field.Name}Old)
         {{
             _{field.Name}Changed = true;
+            changed = true;");
+
+                foreach (AttributeData at in field.GetAttributes())
+                {
+                    if (at.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default))
+                        if ((string)at.ConstructorArguments[0].Value != "")
+                            stringBuilder.AppendLine($"            {at.ConstructorArguments[0].Value}(_{field.Name}Old, {field.Name});");
+                }
+                stringBuilder.AppendLine($@"
             _{field.Name}Old = {field.Name};
-            changed = true;
         }}");
             }
 
@@ -142,7 +150,7 @@ public partial class {classSymbol.Name}
         }
 
         public static string GetDynamicData_Pre = @"
-    public override List<byte> GetDynamicData()
+    protected override List<byte> GetDynamicData()
     {
         List<byte> list = base.GetDynamicData();
 
@@ -197,7 +205,7 @@ public partial class {classSymbol.Name}
             _{field.Name}Changed = false;
 ");
                 // Check to see if this field is a type we know how to handle
-                stringBuilder.AppendLine($"            list.AddRange(PacketFormatter.SerialiseObject({field.Name}));");
+                stringBuilder.AppendLine($"            list.AddRange(ByteConverter.SerialiseObject({field.Name}));");
                 stringBuilder.Append(@"        }
 ");
             }
@@ -208,7 +216,7 @@ public partial class {classSymbol.Name}
         }
 
         public static string GetFullData_Pre = @"
-    public override List<byte> GetFullData()
+    protected override List<byte> GetFullData()
     {
         List<byte> list = base.GetFullData();
 
@@ -238,7 +246,7 @@ public partial class {classSymbol.Name}
 
             // Add each field to the packet
             foreach (IFieldSymbol field in fields)
-                stringBuilder.AppendLine($"        list.AddRange(PacketFormatter.SerialiseObject({field.Name}));");
+                stringBuilder.AppendLine($"        list.AddRange(ByteConverter.SerialiseObject({field.Name}));");
 
             stringBuilder.Append(GetFullData_Post);
 
@@ -256,7 +264,7 @@ public partial class {classSymbol.Name}
     }
 ";
 
-        private string AddParseSyncPacket(IEnumerable<IFieldSymbol> fields)
+        private string AddParseSyncPacket(IEnumerable<IFieldSymbol> fields, ISymbol attributeSymbol)
         {
             StringBuilder stringBuilder = new StringBuilder(ParseSyncPacket_Pre);
 
@@ -270,11 +278,26 @@ public partial class {classSymbol.Name}
             int bitCount = 0;
             foreach (IFieldSymbol field in fields)
             {
-                stringBuilder.Append($@"
+                stringBuilder.AppendLine($@"
         if (((configBytes[{bitCount / 8}] >> {bitCount % 8}) & 1) != 0)
-");
-                
-                stringBuilder.AppendLine($"            {field.Name} = ({field.Type})PacketFormatter.DeserialiseObject(typeof({field.Type}), packet.data, ref pointer);");
+        {{");
+                bool hasOnChangedCall = false;
+                foreach (AttributeData at in field.GetAttributes())
+                {
+                    if (at.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default))
+                        if ((string)at.ConstructorArguments[0].Value != "")
+                        {
+                            stringBuilder.AppendLine($@"            {field.Type} newValue = ({field.Type})ByteConverter.DeserialiseObject(typeof({field.Type}), packet.data, ref pointer);");
+                            stringBuilder.AppendLine($"            {at.ConstructorArguments[0].Value}(_{field.Name}Old, newValue);");
+                            stringBuilder.AppendLine($@"            {field.Name} = newValue;");
+                            hasOnChangedCall = true;
+                        }
+                }
+
+                if (!hasOnChangedCall)
+                    stringBuilder.AppendLine($"            {field.Name} = ({field.Type})ByteConverter.DeserialiseObject(typeof({field.Type}), packet.data, ref pointer);");
+                stringBuilder.AppendLine("        }");
+
                 bitCount++;
             }
 

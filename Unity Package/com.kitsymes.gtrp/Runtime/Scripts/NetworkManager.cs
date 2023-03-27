@@ -18,12 +18,17 @@ namespace KitSymes.GTRP
         public event EventSubscriber OnServerStop;
         public event EventSubscriber OnClientStart;
         public event EventSubscriber OnClientStop;
+        public delegate void ClientEventSubscriber(uint key);
+        public event ClientEventSubscriber OnPlayerConnect;
+        public event ClientEventSubscriber OnPlayerDisconnect;
 
         // Shared
         private static NetworkManager _instance;
 
-        public List<NetworkObject> _spawnableObjects = new List<NetworkObject>();
-        public Dictionary<uint, NetworkObject> _spawnedObjects = new Dictionary<uint, NetworkObject>();
+        private List<NetworkObject> _spawnableObjects = new List<NetworkObject>();
+        private Dictionary<uint, NetworkObject> _spawnedObjects = new Dictionary<uint, NetworkObject>();
+        [SerializeField]
+        private float _tickRate = 20;
 
         // Server Only
         private Dictionary<Type, Action<ServerSideClient, Packet>> _serverHandlers = new();
@@ -33,7 +38,7 @@ namespace KitSymes.GTRP
         private TcpListener _serverTCPListener;
         private UdpClient _serverUDPClient;
         private uint _serverSpawnedObjectsCount;
-        public NetworkObject _serverPlayerPrefab;
+        private NetworkObject _serverPlayerPrefab;
         private Dictionary<uint, NetworkObject> _serverPlayers = new();
 
         // Client Only
@@ -62,10 +67,17 @@ namespace KitSymes.GTRP
             }
         }
 
-        partial void RegisterPackets();
+        float timeSinceLastTick = 0;
 
         public void Update()
         {
+            timeSinceLastTick += Time.deltaTime;
+            if (timeSinceLastTick < 1.0f / _tickRate)
+                return;
+            timeSinceLastTick = 0.0f;
+            foreach (NetworkObject networkObject in _spawnedObjects.Values)
+                networkObject.Tick();
+
             if (IsServerRunning())
             {
                 List<Packet> tcpPackets = new List<Packet>();
@@ -73,6 +85,7 @@ namespace KitSymes.GTRP
                 foreach (NetworkObject networkObject in _spawnedObjects.Values)
                 {
                     tcpPackets.AddRange(networkObject.GetTCPPackets());
+                    tcpPackets.AddRange(networkObject.GetAllDynamicSyncPackets());
                     udpPackets.AddRange(networkObject.GetUDPPackets());
                     networkObject.ClearPackets();
                 }
@@ -122,8 +135,9 @@ namespace KitSymes.GTRP
             _ = UdpListen();
 
             SharedStart();
-            RegisterServerPacketHandler<PacketNetworkTransformSync>(OnServerPacketTargetedReceived);
             RegisterServerPacketHandler<PacketPing>(OnServerPacketPingReceived);
+            RegisterServerPacketHandler<PacketServerRPC>(OnServerPacketServerRPCReceived);
+            RegisterServerPacketHandler<PacketNetworkTransformSync>(OnServerPacketTargetedReceived);
 
             OnServerStart?.Invoke();
             return true;
@@ -134,11 +148,14 @@ namespace KitSymes.GTRP
                 return;
             _serverRunning = false;
 
-            foreach (ServerSideClient c in _serverSideClients.Values)
+            if (_serverSideClients != null)
             {
-                c.Stop();
+                foreach (ServerSideClient c in _serverSideClients.Values)
+                {
+                    c.Stop();
+                }
+                _serverSideClients.Clear();
             }
-            _serverSideClients.Clear();
 
             _serverTCPListener.Stop();
             _serverUDPClient.Close();
@@ -166,26 +183,32 @@ namespace KitSymes.GTRP
                     _serverClientCount++;
                     ServerSideClient c = new ServerSideClient(this, _serverClientCount, task.Result);
                     _serverSideClients.Add(c.GetID(), c);
-                    SendTo(c, new PacketServerInfo() { yourClientID = c.GetID() });
+
+                    List<Packet> packets = new List<Packet>();
+
                     if (_spawnedObjects.Count > 0)
                     {
-                        List<Packet> packets = new List<Packet>();
                         foreach (NetworkObject obj in _spawnedObjects.Values)
                         {
+                            //Debug.Log($"Spawning {obj} at {obj.transform.position}");
                             packets.Add(obj.GetSpawnPacket());
                             packets.AddRange(obj.GetAllFullSyncPackets());
                         }
-                        SendTo(c, packets.ToArray());
                     }
-                    Debug.Log("Accepted a Connection");
 
                     if (_serverPlayerPrefab != null)
                     {
                         NetworkObject playerNetworkObject = UnityEngine.Object.Instantiate(_serverPlayerPrefab);
+                        playerNetworkObject.gameObject.name = "Player " + c.GetID();
                         playerNetworkObject.ChangeOwnership(c.GetID());
                         Spawn(playerNetworkObject);
                         _serverPlayers.Add(c.GetID(), playerNetworkObject);
                     }
+
+                    packets.Add(new PacketServerInfo() { yourClientID = c.GetID() });
+                    SendTo(c, packets.ToArray());
+
+                    OnPlayerConnect?.Invoke(c.GetID());
                 }
                 catch (ObjectDisposedException)
                 {
@@ -233,6 +256,8 @@ namespace KitSymes.GTRP
                 return;
 
             Debug.Log("SERVER: [" + id + "] Client disconnecting");
+
+            OnPlayerDisconnect?.Invoke(id);
 
             ServerSideClient client = _serverSideClients[id];
             client.Stop();
@@ -348,7 +373,18 @@ namespace KitSymes.GTRP
             //        _udpClient.SendAsync(packetBuffer.ToArray(), packetBuffer.Count, client.GetUdpEndPoint());
         }
 
+        public NetworkObject GetPlayer(uint id)
+        {
+            if (!_serverPlayers.ContainsKey(id))
+                return null;
+            return _serverPlayers[id];
+        }
+
         // Static Functions
+        public static NetworkManager GetInstance()
+        {
+            return _instance;
+        }
         public static bool IsServer()
         {
             if (_instance == null)
@@ -456,6 +492,21 @@ namespace KitSymes.GTRP
             _ = sender.WriteTCP(new PacketPong());
         }
 
+        private void OnServerPacketServerRPCReceived(ServerSideClient sender, PacketServerRPC packet)
+        {
+            // Validate Packet
+            if (!_spawnedObjects.ContainsKey(packet.networkObjectID))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
+            if (networkObject.GetOwnerID() != sender.GetID())
+                return;
+            if (!networkObject.HasNetworkBehaviour(packet.networkBehaviourID))
+                return;
+            NetworkBehaviour networkBehaviour = networkObject.GetNetworkBehaviour(packet.networkBehaviourID);
+
+            networkBehaviour.OnPacketServerRPCReceive(packet);
+        }
+
         private void OnServerPacketTargetedReceived(ServerSideClient sender, PacketTargeted packet)
         {
             // Validate Packet
@@ -494,6 +545,7 @@ namespace KitSymes.GTRP
             RegisterClientPacketHandler<PacketDespawnObject>(OnClientPacketDespawnObjectReceived);
             RegisterClientPacketHandler<PacketNetworkTransformSync>(OnClientPacketTargetedReceived);
             RegisterClientPacketHandler<PacketNetworkBehaviourSync>(OnClientPacketNetworkBehaviourSyncReceived);
+            RegisterClientPacketHandler<PacketClientRPC>(OnClientPacketClientRPCReceived);
             RegisterClientPacketHandler<PacketOwnershipChange>(OnClientPacketOwnershipChangeReceived);
             RegisterClientPacketHandler<PacketAuthorityChange>(OnClientPacketAuthorityChangeReceived);
 
@@ -610,6 +662,8 @@ namespace KitSymes.GTRP
 
         private void OnClientPacketSpawnObjectReceived(PacketSpawnObject packet)
         {
+            Debug.Log($"Spawn: {packet.prefabID} {packet.ownerHasAuthority} {packet.positionX}");
+
             // Do not spawn duplicate if this client is host
             if (IsServerRunning() && _spawnedObjects.ContainsKey(packet.objectNetworkID))
             {
@@ -658,7 +712,7 @@ namespace KitSymes.GTRP
         private void OnClientPacketAuthorityChangeReceived(PacketAuthorityChange packet)
         {
             // Validate Packet
-            if (_spawnedObjects.ContainsKey(packet.networkObjectID))
+            if (!_spawnedObjects.ContainsKey(packet.networkObjectID))
                 return;
             NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
             bool oldValue = networkObject.HasAuthority();
@@ -681,6 +735,18 @@ namespace KitSymes.GTRP
 
             if (networkBehaviour.ShouldParseSyncPacket(packet))
                 networkBehaviour.ParseSyncPacket(packet);
+        }
+        private void OnClientPacketClientRPCReceived(PacketClientRPC packet)
+        {
+            // Validate Packet
+            if (!_spawnedObjects.ContainsKey(packet.networkObjectID))
+                return;
+            NetworkObject networkObject = _spawnedObjects[packet.networkObjectID];
+            if (!networkObject.HasNetworkBehaviour(packet.networkBehaviourID))
+                return;
+            NetworkBehaviour networkBehaviour = networkObject.GetNetworkBehaviour(packet.networkBehaviourID);
+
+            networkBehaviour.OnPacketClientRPCReceive(packet);
         }
 
         private void OnClientPacketTargetedReceived(PacketTargeted packet)
@@ -714,7 +780,7 @@ namespace KitSymes.GTRP
         public void BeginProcessingPackets()
         {
             if (IsClientRunning())
-                _clientLocalClient.BeginProcessingPackets();
+                _clientLocalClient.SceneLoaded();
         }
     }
 }

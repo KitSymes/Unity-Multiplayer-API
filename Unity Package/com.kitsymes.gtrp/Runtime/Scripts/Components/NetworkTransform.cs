@@ -36,6 +36,8 @@ namespace KitSymes.GTRP.Components
 
             PacketNetworkTransformSync sync = (PacketNetworkTransformSync)packet;
 
+            //Debug.Log("Processing" + sync.timestamp + " at " + DateTime.Now + " last " + _lastSyncTimestamp);
+
             // Timestamp is the same as or before _lastSyncTimestamp
             if (sync.timestamp.CompareTo(_lastSyncTimestamp) <= 0)
                 return;
@@ -49,11 +51,29 @@ namespace KitSymes.GTRP.Components
             _lastSyncTimestamp = sync.timestamp;
         }
 
-        void Update()
+        public override void Tick()
         {
-            // If the object isn't spawned, is not owned, or does not have authority, skip
-            if (!networkObject.IsSpawned() || !networkObject.IsOwner() || !networkObject.HasAuthority())
+            // If the object isn't spawned skip
+            if (!networkObject.IsSpawned())
                 return;
+
+            bool serverControlled = !networkObject.HasAuthority();
+            bool isServer = networkObject.IsServer();
+            bool isOwned = networkObject.IsOwner();
+
+            if (!(isServer && serverControlled) && !(isOwned && !serverControlled))
+                return;
+            Debug.Log($"Ticked {gameObject}");
+
+            /*
+            // If we are the server, the object has authority _and_ we don't own it, skip
+            if (networkObject.IsServer() && networkObject.HasAuthority() && !networkObject.IsOwner())
+                return;
+            else if (!networkObject.IsOwner)
+            // Otherwise, if we own it and don't have authority, skip
+            else if (networkObject.IsOwner() && !networkObject.HasAuthority())
+                return;
+            */
 
             // Check to see if the position, rotation and scale have changed since last frame
             if (transform.position != _lastPosition)
@@ -75,6 +95,7 @@ namespace KitSymes.GTRP.Components
             // If something has changed, we need to update
             if (_positionChanged || _rotationChanged || _scaleChanged)
             {
+                // Debug.Log($"{gameObject} moved to {transform.position}");
                 // Feed it all information as it filters itself
                 networkObject.AddUDPPacket(new PacketNetworkTransformSync()
                 {

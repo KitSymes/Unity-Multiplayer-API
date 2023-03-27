@@ -16,8 +16,10 @@ namespace KitSymes.GTRP.Internal
         private int _port;
 
         private UdpClient _udpClient;
-        private bool _processPackets = false;
-        private Queue<Packet> _packetQueue = new Queue<Packet>();
+        private bool _sceneLoaded = false;
+        private bool _serverInfoReceived = false;
+        private Queue<Packet> _tcpPacketQueue = new Queue<Packet>();
+        private Queue<Packet> _udpPacketQueue = new Queue<Packet>();
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
         {
@@ -75,7 +77,17 @@ namespace KitSymes.GTRP.Internal
                     if (packet == null)
                         break;
                     // Debug.Log("Recieved " + packet.GetType());
-                    ProcessPacket(packet);
+                    if (packet is PacketServerInfo)
+                    {
+                        _networkManager.ClientPacketReceived(packet);
+                        while (_tcpPacketQueue.Count > 0)
+                            _networkManager.ClientPacketReceived(_tcpPacketQueue.Dequeue());
+                        while (_udpPacketQueue.Count > 0)
+                            _networkManager.ClientPacketReceived(_udpPacketQueue.Dequeue());
+                        _serverInfoReceived = true;
+                    }
+                    else
+                        ProcessTCPPacket(packet);
                 }
                 catch (IOException)
                 {
@@ -107,12 +119,15 @@ namespace KitSymes.GTRP.Internal
 
                     // Deserialise Packet
                     Packet packet = PacketFormatter.Deserialise(result.Buffer);
-                    ProcessPacket(packet);
+                    Debug.Log("Recieved " + packet.GetType());
+                    ProcessUDPPacket(packet);
                 }
-                catch (ObjectDisposedException)
+                catch (Exception ex)
                 {
+                    Debug.LogException(ex);
                     break;
                 }
+                Debug.Log("we go again");
             }
             Debug.Log("Client stopping Receiving UDP");
         }
@@ -122,21 +137,27 @@ namespace KitSymes.GTRP.Internal
             await _udpClient.SendAsync(bytes, bytes.Length);
         }
 
-        private void ProcessPacket(Packet packet)
+        private void ProcessTCPPacket(Packet packet)
         {
-            if (!_processPackets)
-                _packetQueue.Enqueue(packet);
+            if (!_sceneLoaded || !_serverInfoReceived)
+                _tcpPacketQueue.Enqueue(packet);
             else
                 _networkManager.ClientPacketReceived(packet);
+            //Debug.Log(packet.GetType());
         }
 
-        public void BeginProcessingPackets()
+        private void ProcessUDPPacket(Packet packet)
         {
-            _processPackets = true;
-            while (_packetQueue.Count > 0)
-            {
-                _networkManager.ClientPacketReceived(_packetQueue.Dequeue());
-            }
+            if (!_sceneLoaded || !_serverInfoReceived)
+                _udpPacketQueue.Enqueue(packet);
+            else
+                _networkManager.ClientPacketReceived(packet);
+            //Debug.Log(packet.GetType());
+        }
+
+        public void SceneLoaded()
+        {
+            _sceneLoaded = true;
         }
 
         public bool IsRunning() { return _running; }

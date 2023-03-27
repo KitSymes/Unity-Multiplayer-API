@@ -10,7 +10,7 @@ namespace KitSymes.GTRP
         {
             List<byte> bytes = new List<byte>();
             foreach (System.Reflection.FieldInfo field in GetType().GetFields())
-                bytes.AddRange(PacketFormatter.SerialiseObject(field.GetValue(this)));
+                bytes.AddRange(ByteConverter.SerialiseObject(field.GetValue(this)));
             return bytes;
         }
 
@@ -18,7 +18,7 @@ namespace KitSymes.GTRP
         {
             foreach (System.Reflection.FieldInfo field in GetType().GetFields())
             {
-                field.SetValue(this, PacketFormatter.DeserialiseObject(field.FieldType, bytes, ref offset));
+                field.SetValue(this, ByteConverter.DeserialiseObject(field.FieldType, bytes, ref offset));
                 //Debug.Log($"{field.Name}: {field.GetValue(this)}");
             }
         }

@@ -20,7 +20,8 @@ namespace KitSymes.GTRP
             networkObject = GetComponent<NetworkObject>();
             _id = networkObject.RegisterNetworkBehaviour(this);
             _lastUpdate = DateTime.UtcNow;
-            Initialise();
+            InitialiseSyncData();
+            InitialiseClientRPCs();
         }
 
         void Update()
@@ -31,10 +32,12 @@ namespace KitSymes.GTRP
                 networkObject.AddUDPPacket(CreateSyncPacket(true));
         }
 
-        public virtual void Initialise() { }
+        public virtual void Tick() { }
+
+        public virtual void InitialiseSyncData() { }
         public virtual bool HasChanged() { return false; }
-        public virtual List<byte> GetFullData() { return new List<byte>(); }
-        public virtual List<byte> GetDynamicData() { return new List<byte>(); }
+        protected virtual List<byte> GetFullData() { return new List<byte>(); }
+        protected virtual List<byte> GetDynamicData() { return new List<byte>(); }
         public PacketNetworkBehaviourSync CreateSyncPacket(bool dynamic)
         {
             PacketNetworkBehaviourSync packet = new PacketNetworkBehaviourSync()
@@ -45,9 +48,16 @@ namespace KitSymes.GTRP
             packet.data = dynamic ? GetDynamicData().ToArray() : GetFullData().ToArray();
             return packet;
         }
-
         public bool ShouldParseSyncPacket(PacketNetworkBehaviourSync packet) { return _lastUpdate.CompareTo(packet.timestamp) < 0; }
         public virtual int ParseSyncPacket(PacketNetworkBehaviourSync packet) { _lastUpdate = packet.timestamp; return 0; }
+
+        public virtual uint InitialiseClientRPCs() { return 0; }
+        public PacketClientRPC CreateClientRPCPacket(uint methodID, byte[] data) { return new PacketClientRPC() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id, methodID = methodID, data = data }; }
+        public virtual void OnPacketClientRPCReceive(PacketClientRPC packet) { }
+        
+        public virtual uint InitialiseServerRPCs() { return 0; }
+        public PacketServerRPC CreateServerRPCPacket(uint methodID, byte[] data) { return new PacketServerRPC() { networkObjectID = networkObject.GetNetworkID(), networkBehaviourID = _id, methodID = methodID, data = data }; }
+        public virtual void OnPacketServerRPCReceive(PacketServerRPC packet) { }
 
         public virtual void OnServerStart() { }
         public virtual void OnClientStart() { }

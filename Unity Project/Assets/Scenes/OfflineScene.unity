@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028334, g: 0.22571328, b: 0.3069217, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -370,7 +370,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -434,8 +434,12 @@ PrefabInstance:
       value: Scenes/OfflineScene
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _networkManager._tickRate
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: spawnablePrefabs.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _spawnableObjects.Array.size
@@ -452,7 +456,7 @@ PrefabInstance:
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: spawnablePrefabs.Array.data[2]
       value: 
-      objectReference: {fileID: 6045724727241640758, guid: 2720e5cfb206b6f42a362e4130c8f416, type: 3}
+      objectReference: {fileID: 7921853347625080486, guid: 6a914f6f70d55ef468a075d233ea9758, type: 3}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _spawnableObjects.Array.data[0]
       value: 
