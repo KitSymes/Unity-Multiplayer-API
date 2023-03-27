@@ -1,6 +1,4 @@
-﻿using System.Net;
-
-namespace KitSymes.GTRP.Packets
+﻿namespace KitSymes.GTRP.Packets
 {
     public class PacketClientRPC : Packet
     {

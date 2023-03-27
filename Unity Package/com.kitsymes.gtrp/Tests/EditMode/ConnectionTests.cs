@@ -1,15 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using KitSymes.GTRP;
-using KitSymes.GTRP.Internal;
-using KitSymes.GTRP.Packets;
-using NUnit.Framework;
-using UnityEngine;
-using UnityEngine.TestTools;
 
 public class ConnectionTests
 {

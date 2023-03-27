@@ -1,6 +1,5 @@
 ﻿using KitSymes.GTRP.Internal;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace KitSymes.GTRP
 {

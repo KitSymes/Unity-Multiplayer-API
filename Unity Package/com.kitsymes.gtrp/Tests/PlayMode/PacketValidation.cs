@@ -1,12 +1,12 @@
+using KitSymes.GTRP;
+using KitSymes.GTRP.Internal;
+using KitSymes.GTRP.Packets;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
-using KitSymes.GTRP;
-using KitSymes.GTRP.Internal;
-using KitSymes.GTRP.Packets;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 

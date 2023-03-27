@@ -1,6 +1,6 @@
-using System;
 using KitSymes.GTRP.Internal;
 using NUnit.Framework;
+using System;
 using UnityEngine;
 
 public class ConverterTests
