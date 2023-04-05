@@ -25,10 +25,23 @@ namespace KitSymes.GTRP
         // Shared
         private static NetworkManager _instance;
 
+        /// <summary>
+        /// The List of all spawnable Prefabs (which must have a NetworkObject attached).
+        /// </summary>
         private List<NetworkObject> _spawnableObjects = new List<NetworkObject>();
+        /// <summary>
+        /// The runtime Dictionary of all spawned Prefabs, mapped to their unique spawned object ID.
+        /// </summary>
         private Dictionary<uint, NetworkObject> _spawnedObjects = new Dictionary<uint, NetworkObject>();
-        [SerializeField]
+        /// <summary>
+        /// The number of times per second the game ticks at. Changable in the Insepctor. Should be the same for both Client and Server.
+        /// </summary>
+        [SerializeField, Tooltip("Change the number of ticks per second")]
         private float _tickRate = 20;
+        /// <summary>
+        /// The time since the game last ticked.
+        /// </summary>
+        float _timeSinceLastTick = 0;
 
         // Server Only
         private Dictionary<Type, Action<ServerSideClient, Packet>> _serverHandlers = new();
@@ -46,6 +59,9 @@ namespace KitSymes.GTRP
         private LocalClient _clientLocalClient;
         private uint _clientID;
 
+        /// <summary>
+        /// Called by both <seealso cref="ServerStart(int)"/> and <seealso cref="ClientStart(string, int)"/>.
+        /// </summary>
         void SharedStart()
         {
             if (_instance == null)
@@ -56,6 +72,9 @@ namespace KitSymes.GTRP
 
             }
         }
+        /// <summary>
+        /// Called by both <seealso cref="ServerStop"/> and <seealso cref="ClientStop"/>.
+        /// </summary>
         void SharedStop()
         {
             if (_instance != null && _instance == this && !IsClientRunning() && !IsServerRunning())
@@ -67,41 +86,41 @@ namespace KitSymes.GTRP
             }
         }
 
-        float _timeSinceLastTick = 0;
-
+        /// <summary>
+        /// Handles the game ticking.
+        /// Called by <seealso cref="GTRP.Components.NetworkManagerComponent.LateUpdate"/>.
+        /// </summary>
         public void LateUpdate()
         {
+            // Add the time since last frame to the time since last tick
             _timeSinceLastTick += Time.deltaTime;
+            // Check to see if the game should tick this frame
             if (_timeSinceLastTick < 1.0f / _tickRate)
                 return;
             _timeSinceLastTick = 0.0f;
-            foreach (NetworkObject networkObject in _spawnedObjects.Values)
-                networkObject.Tick();
 
+            List<Packet> tcpPackets = new List<Packet>();
+            List<Packet> udpPackets = new List<Packet>();
+            // Tick all the objects
+            foreach (NetworkObject networkObject in _spawnedObjects.Values)
+            {
+                networkObject.Tick();
+                // If they have any packets they want to send to the other side, grab them
+                tcpPackets.AddRange(networkObject.GetTCPPackets());
+                tcpPackets.AddRange(networkObject.GetAllDynamicSyncPackets());
+                udpPackets.AddRange(networkObject.GetUDPPackets());
+                networkObject.ClearPackets();
+            }
+
+            // If the Server is running, send to Clients
             if (IsServerRunning())
             {
-                List<Packet> tcpPackets = new List<Packet>();
-                List<Packet> udpPackets = new List<Packet>();
-                foreach (NetworkObject networkObject in _spawnedObjects.Values)
-                {
-                    tcpPackets.AddRange(networkObject.GetTCPPackets());
-                    tcpPackets.AddRange(networkObject.GetAllDynamicSyncPackets());
-                    udpPackets.AddRange(networkObject.GetUDPPackets());
-                    networkObject.ClearPackets();
-                }
                 SendToAll(tcpPackets.ToArray());
                 Broadcast(udpPackets.ToArray());
             }
+            // If the Client is running, send to the Server
             else if (IsClientRunning())
             {
-                List<Packet> tcpPackets = new List<Packet>();
-                List<Packet> udpPackets = new List<Packet>();
-                foreach (NetworkObject networkObject in _spawnedObjects.Values)
-                {
-                    tcpPackets.AddRange(networkObject.GetTCPPackets());
-                    udpPackets.AddRange(networkObject.GetUDPPackets());
-                    networkObject.ClearPackets();
-                }
                 SendToServerTCP(tcpPackets.ToArray());
                 SendToServerUDP(udpPackets.ToArray());
             }
@@ -511,6 +530,13 @@ namespace KitSymes.GTRP
         #endregion
 
         #region Client Methods
+        /// <summary>
+        /// Start the Client. Pass in the IPv4 Address and Port to connet to, or leave blank for 127.0.0.1:25565.
+        /// </summary>
+        /// <param name="ip">The IPv4 address to connect to. Default 127.0.0.1</param>
+        /// <param name="port">The Port to connect to. Default 25565</param>
+        /// <returns></returns>
+        /// <exception cref="ClientException"></exception>
         public async Task ClientStart(string ip = "127.0.0.1", int port = 25565)
         {
             if (_clientLocalClient != null || IsClientRunning())
@@ -538,6 +564,9 @@ namespace KitSymes.GTRP
 
             OnClientStart?.Invoke();
         }
+        /// <summary>
+        /// Stop the Client. Clears the handlers, invokes <c>OnClientStop</c> and calls <seealso cref="SharedStop"/>.
+        /// </summary>
         public void ClientStop()
         {
             if (!IsClientRunning())
