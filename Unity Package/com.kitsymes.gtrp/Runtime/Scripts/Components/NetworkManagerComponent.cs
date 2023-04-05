@@ -42,9 +42,9 @@ namespace KitSymes.GTRP.Components
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
-        void Update()
+        void LateUpdate()
         {
-            _networkManager.Update();
+            _networkManager.LateUpdate();
         }
 
 #if UNITY_EDITOR

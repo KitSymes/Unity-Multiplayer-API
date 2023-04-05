@@ -69,7 +69,7 @@ namespace KitSymes.GTRP
 
         float _timeSinceLastTick = 0;
 
-        public void Update()
+        public void LateUpdate()
         {
             _timeSinceLastTick += Time.deltaTime;
             if (_timeSinceLastTick < 1.0f / _tickRate)
@@ -395,7 +395,7 @@ namespace KitSymes.GTRP
             }
 
             _spawnedObjects[_serverSpawnedObjectsCount] = obj;
-            obj.Spawn(_serverSpawnedObjectsCount, obj.GetOwnerID());
+            obj.Spawn(_serverSpawnedObjectsCount, obj.GetOwnerID(), obj.HasAuthority());
             _serverSpawnedObjectsCount++;
             ExecuteEvents.Execute<INetworkMessageTarget>(obj.gameObject, null, (x, y) => x.OnServerStart());
 
@@ -676,7 +676,7 @@ namespace KitSymes.GTRP
             networkObject.gameObject.transform.localScale = packet.localScale;
 
             _spawnedObjects[packet.objectNetworkID] = networkObject;
-            networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID);
+            networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID, packet.ownerHasAuthority);
         }
         private void OnClientPacketDespawnObjectReceived(PacketDespawnObject packet)
         {

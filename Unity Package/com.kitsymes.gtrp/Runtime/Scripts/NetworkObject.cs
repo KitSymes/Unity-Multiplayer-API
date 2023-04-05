@@ -53,15 +53,16 @@ namespace KitSymes.GTRP
         }
 
         public bool IsSpawned() { return _spawned; }
-        public void Spawn(uint networkID, uint ownerNetworkID)
+        public void Spawn(uint networkID, uint ownerNetworkID, bool hasAuthority)
         {
             if (_spawned)
                 return;
-            _spawned = true;
 
             _networkID = networkID;
             ChangeOwnership(ownerNetworkID);
+            ChangeAuthority(hasAuthority);
 
+            _spawned = true;
             gameObject.SetActive(true);
         }
         public PacketSpawnObject GetSpawnPacket()
