@@ -37,13 +37,11 @@ public partial class GameManager : NetworkBehaviour
         if (playerL == null)
         {
             playerL = player;
-            Debug.Log("Moving");
             player.transform.position = new Vector3(-7.0f, 0.0f);
         }
         else if (playerR == null)
         {
             playerR = player;
-            Debug.Log("Moving");
             player.transform.position = new Vector3(7.0f, 0.0f);
         }
 
@@ -103,7 +101,6 @@ public partial class GameManager : NetworkBehaviour
             _gameReady = false;
             _ball.SetDirection(new Vector3(-1.0f, 0.0f));
 
-            Debug.Log("Granting Authority");
             playerL.ChangeAuthority(true);
             playerR.ChangeAuthority(true);
         }

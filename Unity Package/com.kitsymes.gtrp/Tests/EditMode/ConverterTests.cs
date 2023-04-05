@@ -10,7 +10,7 @@ public class ConverterTests
     {
         Vector3 original = new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
         Vector3 different = original + Vector3.one;
-        Vector3 reformed = ByteConverter.ToVector3(ByteConverter.GetBytes(original));
+        Vector3 reformed = ByteConverter.ToVector3(ByteConverter.GetBytes(original), out _);
 
         Assert.AreEqual(original, reformed);
         Assert.AreNotEqual(different, reformed);
@@ -21,7 +21,7 @@ public class ConverterTests
     {
         Quaternion original = UnityEngine.Random.rotation;
         Quaternion different = new Quaternion(original.x + 1, original.y + 1, original.z + 1, original.w + 1);
-        Quaternion reformed = ByteConverter.ToQuaternion(ByteConverter.GetBytes(original));
+        Quaternion reformed = ByteConverter.ToQuaternion(ByteConverter.GetBytes(original), out _);
 
         Assert.AreEqual(original, reformed);
         Assert.AreNotEqual(different, reformed);
@@ -32,7 +32,7 @@ public class ConverterTests
     {
         DateTime original = DateTime.Now;
         DateTime different = original.AddTicks(1);
-        DateTime reformed = ByteConverter.ToDateTime(ByteConverter.GetBytes(original));
+        DateTime reformed = ByteConverter.ToDateTime(ByteConverter.GetBytes(original), out _);
         Assert.AreEqual(original, reformed);
         Assert.AreNotEqual(different, reformed);
     }

@@ -32,6 +32,7 @@ namespace KitSymes.GTRP.Internal
         public void Stop()
         {
             _tcpClient.Close();
+            _tcpClient.Dispose();
             _running = false;
         }
 
@@ -42,9 +43,13 @@ namespace KitSymes.GTRP.Internal
             _connectReceived = true;
 
             _udpEndPoint = packet.udpEndPoint;
+            _otherPublicKey = packet.publicKey;
 
             List<Packet> packets = new List<Packet>();
-            packets.Add(new PacketServerInfo() { yourClientID = GetID() });
+            packets.Add(new PacketServerInfo() {
+                yourClientID = GetID(),
+                publicKey = _publicKey
+            });
 
             if (_networkManager.GetSpawnedObjects().Count > 0)
             {
@@ -99,6 +104,16 @@ namespace KitSymes.GTRP.Internal
                 Debug.LogError($"SERVER: [{_id}] TCP Closed");
             }
             Debug.Log($"SERVER: [{_id}] Client stopping receiving TCP");
+        }
+
+        public new async Task WriteTCP(byte[] data)
+        {
+            await base.WriteTCP(data);
+        }
+
+        public new async Task WriteTCP(Packet packet, bool useEncryption = false)
+        {
+            await base.WriteTCP(packet, useEncryption);
         }
 
         public uint GetID() { return _id; }

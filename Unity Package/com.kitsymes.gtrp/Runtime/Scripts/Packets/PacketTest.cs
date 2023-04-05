@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace KitSymes.GTRP.Packets
@@ -23,5 +24,6 @@ namespace KitSymes.GTRP.Packets
         public Quaternion testQuaternion;
         public DateTime testDateTime;
         public IPEndPoint testIPEndPoint;
+        public RSAParameters testRSAParameters;
     }
 }

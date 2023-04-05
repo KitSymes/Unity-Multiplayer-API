@@ -180,6 +180,7 @@ namespace KitSymes.GTRP
                 try
                 {
                     await task;
+
                     // Increment _clientCount first, because we want to count clients normally, as ID 0 represents the Server (For things such as ownerID)
                     _serverClientCount++;
                     ServerSideClient c = new ServerSideClient(this, _serverClientCount, task.Result);
@@ -201,7 +202,7 @@ namespace KitSymes.GTRP
                     break;
                 }
             }
-            Debug.Log("Server closed so stopping accepting TCP Clients");
+            //Debug.Log("Server closed so stopping accepting TCP Clients");
         }
         private async Task UdpListen()
         {
@@ -474,7 +475,7 @@ namespace KitSymes.GTRP
         #region Server Handlers
         public void OnServerPacketPingReceived(ServerSideClient sender, PacketPing packet)
         {
-            Debug.Log($"{sender.GetID()} Ping");
+            Debug.Log($"[{sender.GetID()}] Ping");
             _ = sender.WriteTCP(new PacketPong());
         }
 

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using KitSymes.GTRP.Packets;
+using System;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,12 +14,21 @@ namespace KitSymes.GTRP.Internal
 
         private SemaphoreSlim _tcpWriteAsyncLock;
 
+        protected RSACryptoServiceProvider _rsaProvider;
+        protected RSAParameters _publicKey;
+        protected RSAParameters _privateKey;
+        protected RSAParameters _otherPublicKey;
+
         public Client()
         {
             _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
+
+            _rsaProvider = new RSACryptoServiceProvider(512);
+            _publicKey = _rsaProvider.ExportParameters(false);
+            _privateKey = _rsaProvider.ExportParameters(true);
         }
 
-        public async Task WriteTCP(byte[] data)
+        protected async Task WriteTCP(byte[] data)
         {
             await _tcpWriteAsyncLock.WaitAsync();
 
@@ -33,7 +44,7 @@ namespace KitSymes.GTRP.Internal
             }
         }
 
-        public async Task WriteTCP(Packet packet)
+        protected async Task WriteTCP(Packet packet, bool useEncryption = false)
         {
             await _tcpWriteAsyncLock.WaitAsync();
 
@@ -41,8 +52,22 @@ namespace KitSymes.GTRP.Internal
             {
                 byte[] buffer = PacketFormatter.Serialise(packet);
 
-                // Send Packet Size + Packet
+                // Encrypt the data if needed
+                if (useEncryption)
+                {
+                    // Import the other side's public key
+                    _rsaProvider.ImportParameters(_otherPublicKey);
+                    // Encrypt the packet
+                    buffer = _rsaProvider.Encrypt(buffer, true);
+                    // Create a new packet so the other side knows it's encrypted
+                    PacketEncrypted packetEncrypted = new PacketEncrypted() { encryptedData = buffer };
+                    // Serialise the encrypted packet
+                    buffer = PacketFormatter.Serialise(packetEncrypted);
+                }
+                // Send Packet Size
                 await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
+
+                // Send Packet Data
                 await _tcpClient.GetStream().WriteAsync(buffer);
 
                 // Flush Stream
@@ -82,7 +107,18 @@ namespace KitSymes.GTRP.Internal
             }
 
             // Deserialise Packet
-            return PacketFormatter.Deserialise(packetBuffer);
+            Packet packet = PacketFormatter.Deserialise(packetBuffer);
+            // If the Packet is Encrypted
+            if (packet is PacketEncrypted encrypted)
+            {
+                // Import the other side's public key
+                _rsaProvider.ImportParameters(_privateKey);
+                // Encrypt the packet
+                byte[] buffer = _rsaProvider.Decrypt(encrypted.encryptedData, true);
+
+                return PacketFormatter.Deserialise(buffer);
+            }
+            return packet;
         }
     }
 }

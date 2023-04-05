@@ -205,7 +205,7 @@ public partial class {classSymbol.Name}
             _{field.Name}Changed = false;
 ");
                 // Check to see if this field is a type we know how to handle
-                stringBuilder.AppendLine($"            list.AddRange(ByteConverter.SerialiseObject({field.Name}));");
+                stringBuilder.AppendLine($"            list.AddRange(ByteConverter.SerialiseArgument<{field.Type}>({field.Name}));");
                 stringBuilder.Append(@"        }
 ");
             }
@@ -246,7 +246,7 @@ public partial class {classSymbol.Name}
 
             // Add each field to the packet
             foreach (IFieldSymbol field in fields)
-                stringBuilder.AppendLine($"        list.AddRange(ByteConverter.SerialiseObject({field.Name}));");
+                stringBuilder.AppendLine($"        list.AddRange(ByteConverter.SerialiseArgument<{field.Type}>({field.Name}));");
 
             stringBuilder.Append(GetFullData_Post);
 
@@ -287,7 +287,7 @@ public partial class {classSymbol.Name}
                     if (at.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default))
                         if ((string)at.ConstructorArguments[0].Value != "")
                         {
-                            stringBuilder.AppendLine($@"            {field.Type} newValue = ({field.Type})ByteConverter.DeserialiseObject(typeof({field.Type}), packet.data, ref pointer);");
+                            stringBuilder.AppendLine($@"            {field.Type} newValue = ({field.Type})ByteConverter.DeserialiseArgument<{field.Type}>(packet.data, ref pointer);");
                             stringBuilder.AppendLine($"            {at.ConstructorArguments[0].Value}(_{field.Name}Old, newValue);");
                             stringBuilder.AppendLine($@"            {field.Name} = newValue;");
                             hasOnChangedCall = true;
@@ -295,7 +295,7 @@ public partial class {classSymbol.Name}
                 }
 
                 if (!hasOnChangedCall)
-                    stringBuilder.AppendLine($"            {field.Name} = ({field.Type})ByteConverter.DeserialiseObject(typeof({field.Type}), packet.data, ref pointer);");
+                    stringBuilder.AppendLine($"            {field.Name} = ({field.Type})ByteConverter.DeserialiseArgument<{field.Type}>(packet.data, ref pointer);");
                 stringBuilder.AppendLine("        }");
 
                 bitCount++;

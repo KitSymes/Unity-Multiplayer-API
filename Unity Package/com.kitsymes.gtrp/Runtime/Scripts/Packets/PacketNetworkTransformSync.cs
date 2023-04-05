@@ -24,6 +24,8 @@ namespace KitSymes.GTRP.Packets
 
         public override void Deserialise(byte[] bytes, int pointer)
         {
+            int used;
+
             byte config = bytes[pointer];
             pointer++;
             containsPosition = ((config >> 0) & 1) != 0;
@@ -31,27 +33,27 @@ namespace KitSymes.GTRP.Packets
             containsScale = ((config >> 2) & 1) != 0;
 
             target = BitConverter.ToUInt32(bytes, pointer);
-            pointer += 4;
-            timestamp = ByteConverter.ToDateTime(bytes, pointer);
-            pointer += 8;
+            pointer += sizeof(int);
+            timestamp = ByteConverter.ToDateTime(bytes, out used, pointer);
+            pointer += used;
 
             // Check to see if the bits are set indicating this information was sent
             if (containsPosition)
             {
-                position = ByteConverter.ToVector3(bytes, pointer);
-                pointer += 12;
+                position = ByteConverter.ToVector3(bytes, out used, pointer);
+                pointer += used;
             }
 
             if (containsRotation)
             {
-                rotation = ByteConverter.ToQuaternion(bytes, pointer);
-                pointer += 16;
+                rotation = ByteConverter.ToQuaternion(bytes, out used, pointer);
+                pointer += used;
             }
 
             if (containsScale)
             {
-                localScale = ByteConverter.ToVector3(bytes, pointer);
-                pointer += 12;
+                localScale = ByteConverter.ToVector3(bytes, out used, pointer);
+                pointer += used;
             }
         }
 

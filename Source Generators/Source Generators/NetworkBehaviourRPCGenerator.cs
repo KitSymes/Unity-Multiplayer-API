@@ -136,7 +136,7 @@ public partial class {classSymbol.Name}
 ");
                 foreach (IParameterSymbol parameter in method.Parameters)
                 {
-                    stringBuilder.AppendLine($"        data.AddRange(ByteConverter.SerialiseObject({parameter.Name}));");
+                    stringBuilder.AppendLine($"        data.AddRange(ByteConverter.SerialiseArgument<{parameter.Type}>({parameter.Name}));");
                 }
                 stringBuilder.Append($@"        Packet{(client ? "Client" : "Server")}RPC packet = Create{(client ? "Client" : "Server")}RPCPacket(_offset + {id}, data.ToArray());
         networkObject.AddTCPPacket(packet);
@@ -171,7 +171,7 @@ public partial class {classSymbol.Name}
                 if (method.Parameters.Length > 0)
                     stringBuilder.AppendLine("            int pointer = 0;");
                 foreach (IParameterSymbol parameter in method.Parameters)
-                    stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseObject(typeof({parameter.Type}), packet.data, ref pointer);");
+                    stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseArgument<{parameter.Type}>(packet.data, ref pointer);");
                 stringBuilder.Append($@"            {method.Name}(");
                 for (int i = 0; i < method.Parameters.Length; i++)
                     stringBuilder.Append($"{(i > 0 ? ", " : "")}{method.Parameters[i].Name}");
@@ -208,7 +208,7 @@ public partial class {classSymbol.Name}
                 if (method.Parameters.Length > 0)
                     stringBuilder.AppendLine("            int pointer = 0;");
                 foreach (IParameterSymbol parameter in method.Parameters)
-                    stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseObject(typeof({parameter.Type}), packet.data, ref pointer);");
+                    stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseArgument<{parameter.Type}>(packet.data, ref pointer);");
                 stringBuilder.Append($@"            {method.Name}(");
                 for (int i = 0; i < method.Parameters.Length; i++)
                     stringBuilder.Append($"{(i > 0 ? ", " : "")}{method.Parameters[i].Name}");

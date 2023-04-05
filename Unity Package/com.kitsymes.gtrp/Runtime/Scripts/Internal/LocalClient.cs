@@ -18,8 +18,12 @@ namespace KitSymes.GTRP.Internal
         private UdpClient _udpClient;
         private bool _sceneLoaded = false;
         private bool _serverInfoReceived = false;
+
+        protected bool _canSend = false;
         private Queue<Packet> _tcpPacketQueue = new Queue<Packet>();
         private Queue<Packet> _udpPacketQueue = new Queue<Packet>();
+        private Queue<Packet> _tcpEncryptedPacketQueue = new Queue<Packet>();
+        private Queue<Packet> _udpEncryptedPacketQueue = new Queue<Packet>();
 
         public LocalClient(NetworkManager networkManager, string ip, int port)
         {
@@ -56,7 +60,11 @@ namespace KitSymes.GTRP.Internal
             ReceiveTCP();
             ReceiveUDP();
 
-            await WriteTCP(new PacketConnect() { udpEndPoint = _udpClient.Client.LocalEndPoint as IPEndPoint });
+            await base.WriteTCP(new PacketConnect()
+            {
+                udpEndPoint = _udpClient.Client.LocalEndPoint as IPEndPoint,
+                publicKey = _publicKey
+            });
             return true;
         }
 
@@ -64,7 +72,9 @@ namespace KitSymes.GTRP.Internal
         {
             _running = false;
             _tcpClient.Close();
+            _tcpClient.Dispose();
             _udpClient?.Close();
+            _udpClient?.Dispose();
         }
 
         public async void ReceiveTCP()
@@ -77,13 +87,28 @@ namespace KitSymes.GTRP.Internal
                     if (packet == null)
                         break;
                     // Debug.Log("Recieved " + packet.GetType());
-                    if (packet is PacketServerInfo)
+                    if (packet is PacketServerInfo serverInfo)
                     {
+                        _otherPublicKey = serverInfo.publicKey;
                         _networkManager.ClientPacketReceived(packet);
                         _serverInfoReceived = true;
+                        _canSend = true;
+                        while (_tcpPacketQueue.Count > 0)
+                            await base.WriteTCP(_tcpPacketQueue.Dequeue());
+                        while (_tcpEncryptedPacketQueue.Count > 0)
+                            await base.WriteTCP(_tcpEncryptedPacketQueue.Dequeue(), true);
+                        while (_udpPacketQueue.Count > 0)
+                            await WriteUDP(_udpPacketQueue.Dequeue());
+                        while (_udpEncryptedPacketQueue.Count > 0)
+                            await WriteUDP(_udpEncryptedPacketQueue.Dequeue(), true);
                     }
                     else
                         ProcessTCPPacket(packet);
+                }
+                catch (ObjectDisposedException)
+                {
+                    //Debug.Log("CLIENT: TCP Closed");
+                    break;
                 }
                 catch (IOException)
                 {
@@ -103,6 +128,25 @@ namespace KitSymes.GTRP.Internal
                 _networkManager.ClientStop();
             }
             //Debug.Log("Client stopping receiving TCP");
+        }
+
+        public new async Task WriteTCP(byte[] data)
+        {
+            await base.WriteTCP(data);
+        }
+
+        public new async Task WriteTCP(Packet packet, bool useEncryption = false)
+        {
+            if (!_canSend)
+            {
+                if (useEncryption)
+                    _tcpEncryptedPacketQueue.Enqueue(packet);
+                else
+                    _tcpPacketQueue.Enqueue(packet);
+                return;
+            }
+
+            await base.WriteTCP(packet, useEncryption);
         }
 
         public async void ReceiveUDP()
@@ -135,6 +179,35 @@ namespace KitSymes.GTRP.Internal
         public async Task WriteUDP(byte[] bytes)
         {
             await _udpClient.SendAsync(bytes, bytes.Length);
+        }
+
+        public async Task WriteUDP(Packet packet, bool useEncryption = false)
+        {
+            if (!_canSend)
+            {
+                if (useEncryption)
+                    _udpEncryptedPacketQueue.Enqueue(packet);
+                else
+                    _udpPacketQueue.Enqueue(packet);
+                return;
+            }
+
+            byte[] buffer = PacketFormatter.Serialise(packet);
+
+            // Encrypt the data if needed
+            if (useEncryption)
+            {
+                _rsaProvider.ImportParameters(_otherPublicKey);
+                buffer = _rsaProvider.Encrypt(buffer, true);
+                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length + sizeof(uint)));
+                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes(PacketFormatter.packetToID[typeof(PacketEncrypted)]));
+            }
+            else
+                // Send Packet Size
+                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
+
+            // Send Data
+            await _udpClient.SendAsync(buffer, buffer.Length);
         }
 
         private void ProcessTCPPacket(Packet packet)
