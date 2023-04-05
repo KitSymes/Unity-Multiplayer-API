@@ -156,6 +156,15 @@ namespace KitSymes.GTRP
             }
         }
 
+        /// <summary>
+        /// Get the NetworkManager instance.
+        /// </summary>
+        /// <returns>null if neither a Client or Server is running, or the NetworkManager instance.</returns>
+        public static NetworkManager GetInstance()
+        {
+            return _instance;
+        }
+
         #region Server Methods
         /// <summary>
         /// Start the Server.
@@ -446,10 +455,10 @@ namespace KitSymes.GTRP
         }
 
         // Static Functions
-        public static NetworkManager GetInstance()
-        {
-            return _instance;
-        }
+        /// <summary>
+        /// Statically check if the Server is running.
+        /// </summary>
+        /// <returns>True if the Server is running.</returns>
         public static bool IsServer()
         {
             if (_instance == null)
@@ -458,6 +467,11 @@ namespace KitSymes.GTRP
             return _instance.IsServerRunning();
         }
 
+        /// <summary>
+        /// Spawn a <see cref="NetworkObject"/>.
+        /// Spawning an object synchronises it to Clients. Before it is spawned, it only exists on the Server.
+        /// </summary>
+        /// <param name="obj">The <see cref="NetworkObject"/> to spawn.</param>
         public void Spawn(NetworkObject obj)
         {
             if (!IsServerRunning())
@@ -483,6 +497,11 @@ namespace KitSymes.GTRP
 
             SendToAll(packets.ToArray());
         }
+        /// <summary>
+        /// Spawn a GameObject.
+        /// Must have a <see cref="NetworkObject"/> attached and be registered in the <see cref="_spawnableObjects"/> list.
+        /// </summary>
+        /// <param name="obj">The GameObject to spawn. Must have a <see cref="NetworkObject"/> attached and be registered in the <see cref="_spawnableObjects"/> list.</param>
         public static void Spawn(GameObject obj)
         {
             if (_instance == null)
@@ -502,6 +521,12 @@ namespace KitSymes.GTRP
             _instance.Spawn(networkObject);
         }
 
+        /// <summary>
+        /// Despawn a <see cref="NetworkObject"/>. Does not delete it.
+        /// This informs Clients to despawn it too (which does delete it).
+        /// </summary>
+        /// <param name="id">The <see cref="NetworkObject"/>'s network ID for validation purposes.</param>
+        /// <param name="networkObject">The <see cref="NetworkObject"/> to despawn.</param>
         public void Despawn(uint id, NetworkObject networkObject)
         {
             // Validate
@@ -538,6 +563,11 @@ namespace KitSymes.GTRP
             _spawnedObjects.Remove(id);
             SendToAll(new PacketDespawnObject() { objectNetworkID = id });
         }
+        /// <summary>
+        /// Despawn a <see cref="NetworkObject"/>. Does not delete it.
+        /// This informs Clients to despawn it too (which does delete it).
+        /// </summary>
+        /// <param name="networkObject">The <see cref="NetworkObject"/> to despawn.</param>
         public static void Despawn(NetworkObject networkObject)
         {
             if (_instance == null)
