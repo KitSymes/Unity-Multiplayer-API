@@ -103,7 +103,7 @@ namespace KitSymes.GTRP.Internal
             {
                 Debug.LogError($"SERVER: [{_id}] TCP Closed");
             }
-            Debug.Log($"SERVER: [{_id}] Client stopping receiving TCP");
+            //Debug.Log($"SERVER: [{_id}] Client stopping receiving TCP");
         }
 
         public new async Task WriteTCP(byte[] data)

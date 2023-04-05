@@ -24,8 +24,8 @@ public partial class GameManager : NetworkBehaviour
 
     public override void OnServerStart()
     {
-        NetworkManager.GetInstance().OnPlayerConnect += OnPlayerConnect;
-        NetworkManager.GetInstance().OnPlayerDisconnect += OnPlayerDisonnect;
+        NetworkManager.GetInstance().ServerOnPlayerConnect += OnPlayerConnect;
+        NetworkManager.GetInstance().ServerOnPlayerDisconnect += OnPlayerDisonnect;
         _ball = Instantiate(_ballPrefab).GetComponent<Ball>();
         NetworkManager.Spawn(_ball.gameObject);
         ResetBall();
@@ -33,7 +33,7 @@ public partial class GameManager : NetworkBehaviour
 
     void OnPlayerConnect(uint id)
     {
-        NetworkObject player = NetworkManager.GetInstance().GetPlayer(id);
+        NetworkObject player = NetworkManager.GetInstance().GetPlayerObject(id);
         if (playerL == null)
         {
             playerL = player;
@@ -50,7 +50,7 @@ public partial class GameManager : NetworkBehaviour
     }
     void OnPlayerDisonnect(uint id)
     {
-        NetworkObject player = NetworkManager.GetInstance().GetPlayer(id);
+        NetworkObject player = NetworkManager.GetInstance().GetPlayerObject(id);
         if (playerL == player)
             playerL = null;
         if (playerR == player)

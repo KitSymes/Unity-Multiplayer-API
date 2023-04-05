@@ -9,18 +9,48 @@ using UnityEngine.EventSystems;
 
 namespace KitSymes.GTRP
 {
+    /// <summary>
+    /// The NetworkManager controls both the Client and Server.
+    /// Certain methods can be called through Static functions once a Client or Server has been started.
+    /// The default implementation is controlled through <see cref="Components.NetworkManagerComponent"/>, but you can copy that component to make your own.
+    /// </summary>
     [Serializable]
-    public partial class NetworkManager
+    public sealed class NetworkManager
     {
         // Delegates and Events
+        /// <summary>
+        /// The Delegate for NetworkManager events.
+        /// </summary>
         public delegate void EventSubscriber();
+        /// <summary>
+        /// The Event called when the Server Starts.
+        /// </summary>
         public event EventSubscriber OnServerStart;
+        /// <summary>
+        /// The Event called when the Server Stops.
+        /// </summary>
         public event EventSubscriber OnServerStop;
+        /// <summary>
+        /// The Event called when the Client Starts.
+        /// </summary>
         public event EventSubscriber OnClientStart;
+        /// <summary>
+        /// The Event called when the Client Stops.
+        /// </summary>
         public event EventSubscriber OnClientStop;
+        /// <summary>
+        /// The Delegate for Player related NetworkManager events.
+        /// </summary>
+        /// <param name="key"></param>
         public delegate void ClientEventSubscriber(uint key);
-        public event ClientEventSubscriber OnPlayerConnect;
-        public event ClientEventSubscriber OnPlayerDisconnect;
+        /// <summary>
+        /// The event called on the Server when a Player connects.
+        /// </summary>
+        public event ClientEventSubscriber ServerOnPlayerConnect;
+        /// <summary>
+        /// The event called on the Server when a Player disconnects.
+        /// </summary>
+        public event ClientEventSubscriber ServerOnPlayerDisconnect;
 
         // Shared
         private static NetworkManager _instance;
@@ -60,7 +90,7 @@ namespace KitSymes.GTRP
         private uint _clientID;
 
         /// <summary>
-        /// Called by both <seealso cref="ServerStart(int)"/> and <seealso cref="ClientStart(string, int)"/>.
+        /// Called by both <see cref="ServerStart(int)"/> and <see cref="ClientStart(string, int)"/>.
         /// </summary>
         void SharedStart()
         {
@@ -73,7 +103,7 @@ namespace KitSymes.GTRP
             }
         }
         /// <summary>
-        /// Called by both <seealso cref="ServerStop"/> and <seealso cref="ClientStop"/>.
+        /// Called by both <see cref="ServerStop"/> and <see cref="ClientStop"/>.
         /// </summary>
         void SharedStop()
         {
@@ -88,7 +118,7 @@ namespace KitSymes.GTRP
 
         /// <summary>
         /// Handles the game ticking.
-        /// Called by <seealso cref="GTRP.Components.NetworkManagerComponent.LateUpdate"/>.
+        /// Called by <see cref="GTRP.Components.NetworkManagerComponent.LateUpdate"/>.
         /// </summary>
         public void LateUpdate()
         {
@@ -127,6 +157,12 @@ namespace KitSymes.GTRP
         }
 
         #region Server Methods
+        /// <summary>
+        /// Start the Server.
+        /// Pass in the Port to bind to, or leave blank for 25565.
+        /// </summary>
+        /// <param name="port">The Port to bind to.</param>
+        /// <returns>True if the Server started sucessfully.</returns>
         public bool ServerStart(int port = 25565)
         {
             if (_serverRunning)
@@ -162,6 +198,10 @@ namespace KitSymes.GTRP
             OnServerStart?.Invoke();
             return true;
         }
+        /// <summary>
+        /// Stop the Server.
+        /// Clears handlers and closes Clients.
+        /// </summary>
         public void ServerStop()
         {
             if (!_serverRunning)
@@ -186,6 +226,10 @@ namespace KitSymes.GTRP
 
             OnServerStop?.Invoke();
         }
+        /// <summary>
+        /// Check if the Server is running.
+        /// </summary>
+        /// <returns></returns>
         public bool IsServerRunning()
         {
             return _serverRunning;
@@ -214,7 +258,7 @@ namespace KitSymes.GTRP
                         _serverPlayers.Add(c.GetID(), playerNetworkObject);
                     }
 
-                    OnPlayerConnect?.Invoke(c.GetID());
+                    ServerOnPlayerConnect?.Invoke(c.GetID());
                 }
                 catch (ObjectDisposedException)
                 {
@@ -256,6 +300,11 @@ namespace KitSymes.GTRP
             }
         }
 
+        /// <summary>
+        /// Call to forcefully disconnect the Player of a given network ID.
+        /// Also called by the API when a Player disconnects internally/naturally in <see cref="ServerSideClient.ReceiveTcp"/>.
+        /// </summary>
+        /// <param name="id"></param>
         public void Disconnect(uint id)
         {
             if (!_serverSideClients.ContainsKey(id))
@@ -263,7 +312,7 @@ namespace KitSymes.GTRP
 
             Debug.Log("SERVER: [" + id + "] Client disconnecting");
 
-            OnPlayerDisconnect?.Invoke(id);
+            ServerOnPlayerDisconnect?.Invoke(id);
 
             ServerSideClient client = _serverSideClients[id];
             client.Stop();
@@ -277,7 +326,12 @@ namespace KitSymes.GTRP
             }
         }
 
-        // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        /// <summary>
+        /// Register a Function to be called when the given <see cref="Packet"/> is received on the Server.
+        /// Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        /// </summary>
+        /// <typeparam name="T">The <see cref="Packet"/> to listen for.</typeparam>
+        /// <param name="handler">The Function to call when the <see cref="Packet"/> of type <typeparamref name="T"/> is received.</param>
         public void RegisterServerPacketHandler<T>(Action<ServerSideClient, T> handler) where T : Packet
         {
             Action<ServerSideClient, Packet> wrapper = (sender, packet) => handler(sender, packet as T);
@@ -286,7 +340,7 @@ namespace KitSymes.GTRP
             else
                 _serverHandlers.Add(typeof(T), wrapper);
         }
-        public void ServerPacketReceived(ServerSideClient sender, Packet packet)
+        internal void ServerPacketReceived(ServerSideClient sender, Packet packet)
         {
             if (_serverHandlers.ContainsKey(packet.GetType()) && _serverHandlers[packet.GetType()] != null)
                 _serverHandlers[packet.GetType()].Invoke(sender, packet);
@@ -379,7 +433,12 @@ namespace KitSymes.GTRP
             //        _udpClient.SendAsync(packetBuffer.ToArray(), packetBuffer.Count, client.GetUdpEndPoint());
         }
 
-        public NetworkObject GetPlayer(uint id)
+        /// <summary>
+        /// Get the <see cref="NetworkObject"/> of a Player with the given network ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns><c>null</c> or the <see cref="NetworkObject"/> the Player owns.</returns>
+        public NetworkObject GetPlayerObject(uint id)
         {
             if (!_serverPlayers.ContainsKey(id))
                 return null;
@@ -492,7 +551,7 @@ namespace KitSymes.GTRP
         #endregion
 
         #region Server Handlers
-        public void OnServerPacketPingReceived(ServerSideClient sender, PacketPing packet)
+        private void OnServerPacketPingReceived(ServerSideClient sender, PacketPing packet)
         {
             Debug.Log($"[{sender.GetID()}] Ping");
             _ = sender.WriteTCP(new PacketPong());
@@ -565,7 +624,7 @@ namespace KitSymes.GTRP
             OnClientStart?.Invoke();
         }
         /// <summary>
-        /// Stop the Client. Clears the handlers, invokes <c>OnClientStop</c> and calls <seealso cref="SharedStop"/>.
+        /// Stop the Client. Clears the handlers, invokes <c>OnClientStop</c> and calls <see cref="SharedStop"/>.
         /// </summary>
         public void ClientStop()
         {
@@ -581,12 +640,21 @@ namespace KitSymes.GTRP
 
             OnClientStop?.Invoke();
         }
+        /// <summary>
+        /// Check if the Client is running.
+        /// </summary>
+        /// <returns>True if the Client is running.</returns>
         public bool IsClientRunning()
         {
             return _clientLocalClient != null && _clientLocalClient.IsRunning();
         }
 
-        // Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        /// <summary>
+        /// Register a Function to be called when the given <see cref="Packet"/> is received on the Client.
+        /// Based off of https://stackoverflow.com/questions/30378593/register-event-handler-for-specific-subclass
+        /// </summary>
+        /// <typeparam name="T">The <see cref="Packet"/> to listen for.</typeparam>
+        /// <param name="handler">The Function to call when the <see cref="Packet"/> of type <typeparamref name="T"/> is received.</param>
         public void RegisterClientPacketHandler<T>(Action<T> handler) where T : Packet
         {
             Action<Packet> wrapper = packet => handler(packet as T);
@@ -595,7 +663,7 @@ namespace KitSymes.GTRP
             else
                 _clientHandlers.Add(typeof(T), wrapper);
         }
-        public void ClientPacketReceived(Packet packet)
+        internal void ClientPacketReceived(Packet packet)
         {
             if (_clientHandlers.ContainsKey(packet.GetType()) && _clientHandlers[packet.GetType()] != null)
                 _clientHandlers[packet.GetType()].Invoke(packet);
@@ -642,6 +710,10 @@ namespace KitSymes.GTRP
         }
 
         // Static Functions
+        /// <summary>
+        /// Statically check if the Client is running.
+        /// </summary>
+        /// <returns>True if the Client is running.</returns>
         public static bool IsClient()
         {
             if (_instance == null)
@@ -649,6 +721,11 @@ namespace KitSymes.GTRP
 
             return _instance.IsClientRunning();
         }
+        /// <summary>
+        /// Get the Client's network ID.
+        /// Player IDs start at 1. 0 means no Client is running.
+        /// </summary>
+        /// <returns>0 if no Client is running, or the Player's network ID.</returns>
         public static uint GetClientID()
         {
             if (_instance == null)
@@ -786,12 +863,20 @@ namespace KitSymes.GTRP
         }
         #endregion
 
+        /// <summary>
+        /// Set the spawnable Prefabs List. Cannot be done when the Server or Client is running.
+        /// </summary>
+        /// <param name="spawnableObjects">The List of <see cref="NetworkObject"/>s that can be spawned.</param>
         public void SetSpawnableObjects(List<NetworkObject> spawnableObjects)
         {
             if (IsServerRunning() || IsClientRunning())
                 return;
             _spawnableObjects = spawnableObjects;
         }
+        /// <summary>
+        /// Set the Player Prefab. Cannot be done when the Server or Client is running.
+        /// </summary>
+        /// <param name="playerPrefab">The <see cref="NetworkObject"/> prefab that is created when a Player joins (and is given ownership, but not necessarily authority, of).</param>
         public void SetPlayerPrefab(NetworkObject playerPrefab)
         {
             if (IsServerRunning() || IsClientRunning())
@@ -799,12 +884,19 @@ namespace KitSymes.GTRP
             _serverPlayerPrefab = playerPrefab;
         }
 
+        /// <summary>
+        /// Call when the Client loads into the Online Scene to indicate that it can start receiving <see cref="Packet"/>s from the Server.
+        /// </summary>
         public void BeginProcessingPackets()
         {
             if (IsClientRunning())
                 _clientLocalClient.SceneLoaded();
         }
 
+        /// <summary>
+        /// Get all of the spawned <see cref="NetworkObject"/>s in a Dictionary with their network ID.
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<uint, NetworkObject> GetSpawnedObjects() { return _spawnedObjects; }
     }
 }

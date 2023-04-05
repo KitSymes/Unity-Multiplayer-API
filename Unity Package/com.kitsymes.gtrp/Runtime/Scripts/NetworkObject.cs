@@ -6,6 +6,10 @@ namespace KitSymes.GTRP
 {
     public sealed class NetworkObject : MonoBehaviour
     {
+        /// <summary>
+        /// The prefab ID of this prefab - must be serialised for Unity to save it.
+        /// I believe [HideInInspector] interferes with it.
+        /// </summary>
         [SerializeField]
         private uint _prefabID;
 
@@ -41,7 +45,7 @@ namespace KitSymes.GTRP
         }
 
         /// <summary>
-        /// Tick this object and its <seealso cref="NetworkBehaviour"/>s.
+        /// Tick this object and its <see cref="NetworkBehaviour"/>s.
         /// </summary>
         public void Tick()
         {
@@ -79,9 +83,9 @@ namespace KitSymes.GTRP
             gameObject.SetActive(true);
         }
         /// <summary>
-        /// Get the <seealso cref="PacketSpawnObject"/> for this object.
+        /// Get the <see cref="PacketSpawnObject"/> for this object.
         /// </summary>
-        /// <returns>This object's <seealso cref="PacketSpawnObject"/>.</returns>
+        /// <returns>This object's <see cref="PacketSpawnObject"/>.</returns>
         internal PacketSpawnObject GetSpawnPacket()
         {
             return new PacketSpawnObject
@@ -97,27 +101,27 @@ namespace KitSymes.GTRP
         }
 
         /// <summary>
-        /// Add a <seealso cref="Packet"/> to be sent to the other side through TCP.
+        /// Add a <see cref="Packet"/> to be sent to the other side through TCP.
         /// </summary>
-        /// <param name="packet">The <seealso cref="Packet"/> to be sent.</param>
+        /// <param name="packet">The <see cref="Packet"/> to be sent.</param>
         public void AddTCPPacket(Packet packet) { _tcpPackets.Add(packet); }
         /// <summary>
-        /// Get all <seealso cref="Packet"/>s that should be sent to the other side using TCP.
+        /// Get all <see cref="Packet"/>s that should be sent to the other side using TCP.
         /// </summary>
-        /// <returns>The <seealso cref="List{T}"/> of <seealso cref="Packet"/>s to be sent.</returns>
+        /// <returns>The <see cref="List{T}"/> of <see cref="Packet"/>s to be sent.</returns>
         public List<Packet> GetTCPPackets() { return _tcpPackets; }
         /// <summary>
-        /// Add a <seealso cref="Packet"/> to be sent to the other side through UDP.
+        /// Add a <see cref="Packet"/> to be sent to the other side through UDP.
         /// </summary>
-        /// <param name="packet">The <seealso cref="Packet"/> to be sent.</param>
+        /// <param name="packet">The <see cref="Packet"/> to be sent.</param>
         public void AddUDPPacket(Packet packet) { _udpPackets.Add(packet); }
         /// <summary>
         /// Get all Packets that should be sent to the other side using UDP.
         /// </summary>
-        /// <returns>The <seealso cref="List{T}"/> of <seealso cref="Packet"/>s to be sent.</returns>
+        /// <returns>The <see cref="List{T}"/> of <see cref="Packet"/>s to be sent.</returns>
         public List<Packet> GetUDPPackets() { return _udpPackets; }
         /// <summary>
-        /// Clear the TCP and UDP <seealso cref="Packet"/> <seealso cref="List{T}"/>s.
+        /// Clear the TCP and UDP <see cref="Packet"/> <see cref="List{T}"/>s.
         /// </summary>
         public void ClearPackets()
         {
@@ -161,7 +165,7 @@ namespace KitSymes.GTRP
 #if UNITY_EDITOR
         /// <summary>
         /// Editor only modifying Prefab ID.
-        /// Called by <seealso cref="GTRP.Components.NetworkManagerComponent.OnValidate"/>.
+        /// Called by <see cref="GTRP.Components.NetworkManagerComponent.OnValidate"/>.
         /// </summary>
         /// <param name="id">The unique ID of this Prefab.</param>
         public void SetPrefabID(uint id) { _prefabID = id; }
@@ -174,19 +178,19 @@ namespace KitSymes.GTRP
 
         /// <summary>
         /// Check if this program owns the object.
-        /// Cached in <seealso cref="ChangeOwnership"/> and <seealso cref="HostSpawn"/>.
+        /// Cached in <see cref="ChangeOwnership"/> and <see cref="HostSpawn"/>.
         /// </summary>
         /// <returns>True if this program owns the object.</returns>
         public bool IsOwner() { return _isOwner; }
         /// <summary>
         /// Get the network ID of this object's owner.
-        /// Cached in <seealso cref="ChangeOwnership"/>.
+        /// Cached in <see cref="ChangeOwnership"/>.
         /// </summary>
         /// <returns>The unique network ID of this object's owner.</returns>
         public uint GetOwnerID() { return _ownerNetworkID; }
         /// <summary>
         /// Change the owner of this object.
-        /// Updates the owner cache info and if this is the Server, adds the <seealso cref="PacketOwnershipChange"/> to be sent to Clients.
+        /// Updates the owner cache info and if this is the Server, adds the <see cref="PacketOwnershipChange"/> to be sent to Clients.
         /// </summary>
         /// <param name="newOwner">The new owner's unique network ID.</param>
         public void ChangeOwnership(uint newOwner)
@@ -207,13 +211,13 @@ namespace KitSymes.GTRP
 
         /// <summary>
         /// Check to see if the owner of this object has authority over it.
-        /// Cached in <seealso cref="ChangeOwnership"/> and <seealso cref="HostSpawn"/>.
+        /// Cached in <see cref="ChangeOwnership"/> and <see cref="HostSpawn"/>.
         /// </summary>
         /// <returns></returns>
         public bool HasAuthority() { return _hasAuthoriy; }
         /// <summary>
         /// Change whether this object's owner has authority over it.
-        /// If this is the Server, adds the <seealso cref="PacketAuthorityChange"/> to be sent to Clients.
+        /// If this is the Server, adds the <see cref="PacketAuthorityChange"/> to be sent to Clients.
         /// </summary>
         /// <param name="hasAuthority"></param>
         public void ChangeAuthority(bool hasAuthority)
@@ -239,17 +243,17 @@ namespace KitSymes.GTRP
         public bool HasNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours.ContainsKey(networkBehaviourID); }
         /// <summary>
         /// Get the Network Behaviour with the given Network Behaviour ID.
-        /// Will throw an Exception if the ID is invalid. Use <seealso cref="HasNetworkBehaviour"/> first.
+        /// Will throw an Exception if the ID is invalid. Use <see cref="HasNetworkBehaviour"/> first.
         /// </summary>
         /// <param name="networkBehaviourID">The Network Behaviour ID to get.</param>
-        /// <returns>The <seealso cref="NetworkBehaviour"/> with the given ID.</returns>
+        /// <returns>The <see cref="NetworkBehaviour"/> with the given ID.</returns>
         public NetworkBehaviour GetNetworkBehaviour(uint networkBehaviourID) { return _networkBehaviours[networkBehaviourID]; }
         /// <summary>
-        /// Register a given <seealso cref="NetworkBehaviour"/> to this object.
-        /// Called by <seealso cref="NetworkBehaviour.Awake"/>.
+        /// Register a given <see cref="NetworkBehaviour"/> to this object.
+        /// Called by <see cref="NetworkBehaviour.Awake"/>.
         /// </summary>
-        /// <param name="networkBehaviour">The <seealso cref="NetworkBehaviour"/> to register.</param>
-        /// <returns>The Network Behaviour ID the given <seealso cref="NetworkBehaviour"/> was registered as.</returns>
+        /// <param name="networkBehaviour">The <see cref="NetworkBehaviour"/> to register.</param>
+        /// <returns>The Network Behaviour ID the given <see cref="NetworkBehaviour"/> was registered as.</returns>
         public uint RegisterNetworkBehaviour(NetworkBehaviour networkBehaviour)
         {
             uint key = _networkBehavioursCount;
@@ -259,7 +263,7 @@ namespace KitSymes.GTRP
         }
 
         /// <summary>
-        /// Called in <seealso cref="NetworkManager.OnClientPacketSpawnObjectReceived"/> to update the owner and authority cache.
+        /// Called in <see cref="NetworkManager.OnClientPacketSpawnObjectReceived"/> to update the owner and authority cache.
         /// </summary>
         /// <param name="packet"></param>
         internal void HostSpawn(PacketSpawnObject packet)
@@ -271,7 +275,7 @@ namespace KitSymes.GTRP
 
         /// <summary>
         /// Check if this object is the Server's instance of it.
-        /// Cached in <seealso cref="Start"/>.
+        /// Cached in <see cref="Start"/>.
         /// </summary>
         /// <returns>True if this object is the Server's instance of it.</returns>
         public bool IsServer() { return _isServer; }
