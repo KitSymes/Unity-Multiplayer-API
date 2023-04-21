@@ -435,11 +435,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _networkManager._tickRate
-      value: 40
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: spawnablePrefabs.Array.size
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _spawnableObjects.Array.size
@@ -457,6 +457,10 @@ PrefabInstance:
       propertyPath: spawnablePrefabs.Array.data[2]
       value: 
       objectReference: {fileID: 7921853347625080486, guid: 6a914f6f70d55ef468a075d233ea9758, type: 3}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: spawnablePrefabs.Array.data[3]
+      value: 
+      objectReference: {fileID: 5321446404397096161, guid: 790731b858272054d95531da31d6941b, type: 3}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _spawnableObjects.Array.data[0]
       value: 

@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/OnlineScene.unity
     guid: a6e5abd0508ed384ca77078712787c8c
+  - enabled: 1
+    path: Assets/Scenes/TestScene.unity
+    guid: 56df8d846d324b84ea2a4feb76cee572
   m_configObjects: {}
