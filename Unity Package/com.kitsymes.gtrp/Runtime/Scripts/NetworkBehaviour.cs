@@ -33,23 +33,17 @@ namespace KitSymes.GTRP
             InitialiseClientRPCs();
         }
 
+        #region API only intended Methods
         /// <summary>
-        /// Make sure to call <c>base.Update()</c> when overriding!
+        /// Tick this NetworkBehaviour.
         /// </summary>
-        void Update()
+        public virtual void Tick()
         {
             if (!networkObject.IsSpawned())
                 return;
             if (HasChanged())
                 networkObject.AddUDPPacket(CreateSyncPacket(true));
         }
-
-        #region API only intended Methods
-        /// <summary>
-        /// Tick this NetworkBehaviour.
-        /// Overriden through the Source Generator.
-        /// </summary>
-        public virtual void Tick() { }
 
         /// <summary>
         /// Overriden through the Source Generator.
