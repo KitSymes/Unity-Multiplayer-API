@@ -792,6 +792,7 @@ namespace KitSymes.GTRP
             {
                 NetworkObject temp = _spawnedObjects[packet.objectNetworkID];
                 temp.HostSpawn(packet);
+                ExecuteEvents.Execute<INetworkMessageTarget>(temp.gameObject, null, (x, y) => x.OnClientStart());
                 return;
             }
 
@@ -813,6 +814,7 @@ namespace KitSymes.GTRP
 
             _spawnedObjects[packet.objectNetworkID] = networkObject;
             networkObject.Spawn(packet.objectNetworkID, packet.ownerNetworkID, packet.ownerHasAuthority);
+            ExecuteEvents.Execute<INetworkMessageTarget>(networkObject.gameObject, null, (x, y) => x.OnClientStart());
         }
         private void OnClientPacketDespawnObjectReceived(PacketDespawnObject packet)
         {

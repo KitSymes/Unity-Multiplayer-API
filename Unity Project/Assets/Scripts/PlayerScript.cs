@@ -34,10 +34,16 @@ public partial class PlayerScript : NetworkBehaviour
         _renderer.material.SetColor("_Color", new Color(r, g, b));
     }
 
-    // Start is called before the first frame update
-    void Start()
+    new void Awake()
     {
+        base.Awake();
         _renderer = GetComponent<Renderer>();
+    }
+
+    public override void OnClientStart()
+    {
+        if (networkObject.IsOwner())
+            _renderer.material.SetColor("_Color", new Color(0f, 1f, 0f));
     }
 
     [SyncVar]

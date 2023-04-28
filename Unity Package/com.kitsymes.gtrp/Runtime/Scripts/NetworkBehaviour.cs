@@ -24,7 +24,7 @@ namespace KitSymes.GTRP
         /// <summary>
         /// Make sure to call <c>base.Awake()</c> when overriding!
         /// </summary>
-        void Awake()
+        public void Awake()
         {
             networkObject = GetComponent<NetworkObject>();
             _id = networkObject.RegisterNetworkBehaviour(this);

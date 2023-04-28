@@ -31,7 +31,7 @@ namespace KitSymes.GTRP.Components
 
         public override void OnPacketReceive(Packet packet)
         {
-            if (packet is not PacketNetworkTransformSync)
+            if (packet is not PacketNetworkTransformSync || (networkObject.IsOwner() && networkObject.HasAuthority()))
                 return;
 
             PacketNetworkTransformSync sync = (PacketNetworkTransformSync)packet;
@@ -61,7 +61,7 @@ namespace KitSymes.GTRP.Components
             bool isServer = networkObject.IsServer();
             bool isOwned = networkObject.IsOwner();
 
-            if (!(isServer && serverControlled) && !(isOwned && !serverControlled))
+            if (!isServer && !(isOwned && !serverControlled))
                 return;
             //Debug.Log($"Ticked {gameObject}");
 
