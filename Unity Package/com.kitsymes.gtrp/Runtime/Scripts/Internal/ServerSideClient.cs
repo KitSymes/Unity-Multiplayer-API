@@ -16,15 +16,17 @@ namespace KitSymes.GTRP.Internal
         private NetworkManager _networkManager;
         private bool _connectReceived = false;
 
-        private IPEndPoint _udpEndPoint;
+        private IPAddress _ip;
+        private IPEndPoint _endPoint;
 
         public ServerSideClient(NetworkManager networkManager, uint id, TcpClient tcp)
         {
             _id = id;
             _networkManager = networkManager;
             _tcpClient = tcp;
-            _udpEndPoint = null;
             _running = true;
+
+            _ip = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address;
 
             _ = ReceiveTcp();
         }
@@ -42,7 +44,7 @@ namespace KitSymes.GTRP.Internal
                 return;
             _connectReceived = true;
 
-            _udpEndPoint = packet.udpEndPoint;
+            _endPoint = new IPEndPoint(_ip, packet.udpEndPoint.Port);
             _otherPublicKey = packet.publicKey;
 
             List<Packet> packets = new List<Packet>();
@@ -117,6 +119,6 @@ namespace KitSymes.GTRP.Internal
         }
 
         public uint GetID() { return _id; }
-        public IPEndPoint GetUdpEndPoint() { return _udpEndPoint; }
+        public IPEndPoint GetUdpEndPoint() { return _endPoint; }
     }
 }

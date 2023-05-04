@@ -197,14 +197,15 @@ namespace KitSymes.GTRP.Internal
             // Encrypt the data if needed
             if (useEncryption)
             {
+                // Import the other side's public key
                 _rsaProvider.ImportParameters(_otherPublicKey);
+                // Encrypt the packet
                 buffer = _rsaProvider.Encrypt(buffer, true);
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length + sizeof(uint)));
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes(PacketFormatter.packetToID[typeof(PacketEncrypted)]));
+                // Create a new packet so the other side knows it's encrypted
+                PacketEncrypted packetEncrypted = new PacketEncrypted() { encryptedData = buffer };
+                // Serialise the encrypted packet
+                buffer = PacketFormatter.Serialise(packetEncrypted);
             }
-            else
-                // Send Packet Size
-                await _tcpClient.GetStream().WriteAsync(BitConverter.GetBytes((uint)buffer.Length));
 
             // Send Data
             await _udpClient.SendAsync(buffer, buffer.Length);

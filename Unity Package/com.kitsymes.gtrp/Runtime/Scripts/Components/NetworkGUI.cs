@@ -27,6 +27,17 @@ namespace KitSymes.GTRP.Components
             _server.GetNetworkManager().OnServerStop += OnServerStop;
             _server.GetNetworkManager().OnClientStart += OnClientStart;
             _server.GetNetworkManager().OnClientStop += OnClientStop;
+
+            string[] args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "-server")
+                {
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out int port))
+                        _server.port = port;
+                    ToggleServer();
+                }
+            }
         }
 
         public void SetIP(string ip) { _server.ip = ip; }
