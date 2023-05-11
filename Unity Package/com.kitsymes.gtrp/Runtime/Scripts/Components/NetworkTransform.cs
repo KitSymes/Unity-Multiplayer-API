@@ -65,16 +65,6 @@ namespace KitSymes.GTRP.Components
                 return;
             //Debug.Log($"Ticked {gameObject}");
 
-            /*
-            // If we are the server, the object has authority _and_ we don't own it, skip
-            if (networkObject.IsServer() && networkObject.HasAuthority() && !networkObject.IsOwner())
-                return;
-            else if (!networkObject.IsOwner)
-            // Otherwise, if we own it and don't have authority, skip
-            else if (networkObject.IsOwner() && !networkObject.HasAuthority())
-                return;
-            */
-
             // Check to see if the position, rotation and scale have changed since last frame
             if (transform.position != _lastPosition)
             {

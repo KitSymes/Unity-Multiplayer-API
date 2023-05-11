@@ -10,13 +10,6 @@ public class DebugCubeScript : NetworkBehaviour
     private float pause1 = 6.0f;
     private float pause2 = 12.0f;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
     void Update()
     {
         if (!networkObject.IsServer())

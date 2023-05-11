@@ -207,8 +207,6 @@ namespace KitSymes.GTRP.Internal
 
         public static byte[] SerialiseArgument<T>(object obj)
         {
-            //if (obj is null)
-            //    throw new NullReferenceException("Cannot serialise null");
             // Primitives
             if (typeof(T) == typeof(bool))
                 return BitConverter.GetBytes((bool)obj);
@@ -354,7 +352,6 @@ namespace KitSymes.GTRP.Internal
                 MethodInfo generic = method.MakeGenericMethod(array.GetType().GetElementType());
                 for (int i = 0; i < length; i++)
                 {
-                    //array.SetValue(DeserialiseArgument(arrayType, bytes, ref pointer), i);
                     object[] parameters = new object[] { bytes, pointer };
                     array.SetValue(generic.Invoke(null, parameters), i);
                     pointer = (int)parameters[1];

@@ -31,7 +31,6 @@ namespace KitSymes.GTRP
                 {
                     // Set the field header bit
                     header[fieldCount / 8] |= (byte)(1 << fieldCount % 8);
-                    //bytes.AddRange(ByteConverter.SerialiseArgument(value));
                     MethodInfo generic = method.MakeGenericMethod(field.FieldType);
                     bytes.AddRange((byte[])generic.Invoke(null, new object[] { value }));
                 }
@@ -65,7 +64,6 @@ namespace KitSymes.GTRP
                 // Check to see if the field is set
                 if (((header[fieldCount / 8] >> fieldCount % 8) & 1) != 0)
                 {
-                    //value = ByteConverter.DeserialiseArgument(field.FieldType, bytes, ref offset);
                     MethodInfo generic = method.MakeGenericMethod(field.FieldType);
                     object[] parameters = new object[] { bytes, offset };
                     value = generic.Invoke(null, parameters);

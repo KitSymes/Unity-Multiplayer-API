@@ -462,10 +462,6 @@ namespace KitSymes.GTRP
                     if (client.GetUdpEndPoint() != null)
                         _serverUDPClient.SendAsync(bytes, bytes.Length, client.GetUdpEndPoint());
             }
-
-            //foreach (Client client in _clients.Values)
-            //    if (client.GetUdpEndPoint() != null)
-            //        _udpClient.SendAsync(packetBuffer.ToArray(), packetBuffer.Count, client.GetUdpEndPoint());
         }
 
         /// <summary>
