@@ -9,6 +9,7 @@ namespace KitSymes.GTRP.Internal
 {
     public class Client
     {
+        protected NetworkManager _networkManager;
         protected TcpClient _tcpClient;
         protected bool _running = false;
 
@@ -19,13 +20,14 @@ namespace KitSymes.GTRP.Internal
         protected RSAParameters _privateKey;
         protected RSAParameters _otherPublicKey;
 
-        public Client()
+        public Client(NetworkManager networkManager)
         {
             _tcpWriteAsyncLock = new SemaphoreSlim(1, 1);
 
             _rsaProvider = new RSACryptoServiceProvider(512);
             _publicKey = _rsaProvider.ExportParameters(false);
             _privateKey = _rsaProvider.ExportParameters(true);
+            _networkManager = networkManager;
         }
 
         protected async Task WriteTCP(byte[] data)
@@ -84,6 +86,9 @@ namespace KitSymes.GTRP.Internal
             // Read until a packet size is encountered
             byte[] sizeBuffer = new byte[sizeof(uint)];
             int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
+#if UNITY_EDITOR
+            _networkManager.bytesRead += bytesRead;
+#endif
             if (bytesRead <= 0)
             {
                 return null;
@@ -97,6 +102,9 @@ namespace KitSymes.GTRP.Internal
             // Try and read the whole packet
             byte[] packetBuffer = new byte[bufferSize];
             bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
+#if UNITY_EDITOR
+            _networkManager.bytesRead += bytesRead;
+#endif
             if (bytesRead <= 0)
             {
                 return null;

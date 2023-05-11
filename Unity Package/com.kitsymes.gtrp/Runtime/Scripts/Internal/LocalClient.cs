@@ -11,7 +11,6 @@ namespace KitSymes.GTRP.Internal
 {
     public class LocalClient : Client
     {
-        private NetworkManager _networkManager;
         private string _ip;
         private int _port;
 
@@ -25,9 +24,8 @@ namespace KitSymes.GTRP.Internal
         private Queue<Packet> _tcpEncryptedPacketQueue = new Queue<Packet>();
         private Queue<Packet> _udpEncryptedPacketQueue = new Queue<Packet>();
 
-        public LocalClient(NetworkManager networkManager, string ip, int port)
+        public LocalClient(NetworkManager networkManager, string ip, int port) : base(networkManager)
         {
-            _networkManager = networkManager;
             _ip = ip;
             _port = port;
 
@@ -156,6 +154,9 @@ namespace KitSymes.GTRP.Internal
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
+#if UNITY_EDITOR
+                    _networkManager.bytesRead += result.Buffer.Length;
+#endif
 
                     // Deserialise Packet
                     Packet packet = PacketFormatter.Deserialise(result.Buffer);

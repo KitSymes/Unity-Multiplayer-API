@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace KitSymes.GTRP
 {
@@ -89,6 +90,17 @@ namespace KitSymes.GTRP
         private LocalClient _clientLocalClient;
         private uint _clientID;
 
+
+#if UNITY_EDITOR
+        // Debug Variables
+
+        // Variables to display the number of bytes read per second
+        public int bytesRead = 0;
+        [SerializeField]
+        private Text _bytesReadText;
+        private float _timeSinceLastBytesReadUpdate = 0.0f;
+#endif
+
         /// <summary>
         /// Called by both <see cref="ServerStart(int)"/> and <see cref="ClientStart(string, int)"/>.
         /// </summary>
@@ -122,6 +134,17 @@ namespace KitSymes.GTRP
         /// </summary>
         public void LateUpdate()
         {
+#if UNITY_EDITOR
+            _timeSinceLastBytesReadUpdate += Time.deltaTime;
+            if (_timeSinceLastBytesReadUpdate > 1.0f)
+            {
+                _timeSinceLastBytesReadUpdate = 0.0f;
+                if (_bytesReadText != null)
+                    _bytesReadText.text = bytesRead + " bytes/s";
+                bytesRead = 0;
+            }
+#endif
+
             // Add the time since last frame to the time since last tick
             _timeSinceLastTick += Time.deltaTime;
             // Check to see if the game should tick this frame
@@ -283,6 +306,9 @@ namespace KitSymes.GTRP
                 try
                 {
                     UdpReceiveResult result = await _serverUDPClient.ReceiveAsync();
+#if UNITY_EDITOR
+                    bytesRead += result.Buffer.Length;
+#endif
 
                     foreach (ServerSideClient client in _serverSideClients.Values)
                     {

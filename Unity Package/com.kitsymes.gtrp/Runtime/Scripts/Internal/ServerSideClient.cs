@@ -13,16 +13,14 @@ namespace KitSymes.GTRP.Internal
     {
         // 0 is Server, so this ID will start at 1
         private uint _id;
-        private NetworkManager _networkManager;
         private bool _connectReceived = false;
 
         private IPAddress _ip;
         private IPEndPoint _endPoint;
 
-        public ServerSideClient(NetworkManager networkManager, uint id, TcpClient tcp)
+        public ServerSideClient(NetworkManager networkManager, uint id, TcpClient tcp) : base(networkManager)
         {
             _id = id;
-            _networkManager = networkManager;
             _tcpClient = tcp;
             _running = true;
 
