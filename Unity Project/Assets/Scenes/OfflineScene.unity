@@ -435,7 +435,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _networkManager._tickRate
-      value: 60
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: spawnablePrefabs.Array.size

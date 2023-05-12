@@ -34,7 +34,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2498127862453015004
 MeshFilter:
@@ -127,3 +127,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca4f44a4f2c72d7499ac518e0980f056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  predictMovement: 1
+  predictRotation: 1
+  predictSquareThreshold: 0.25
+  predictAngleThreshold: 7

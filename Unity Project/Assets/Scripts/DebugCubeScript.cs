@@ -34,12 +34,12 @@ public class DebugCubeScript : NetworkBehaviour
             transform.Rotate(new Vector3(90.0f, 90.0f, 0.0f) * Time.deltaTime);
         }
 
-        if (pause2 > 0.0f)
+        /*if (pause2 > 0.0f)
         {
             pause2 -= Time.deltaTime;
         } else
         {
             transform.localScale += dir * Time.deltaTime;
-        }
+        }*/
     }
 }

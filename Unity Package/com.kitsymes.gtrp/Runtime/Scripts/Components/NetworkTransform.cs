@@ -16,6 +16,46 @@ namespace KitSymes.GTRP.Components
 
         private DateTime _lastSyncTimestamp;
 
+        public bool predictMovement = true;
+        public bool predictRotation = true;
+        [Range(0f, 1f)]
+        public float predictSquareThreshold = 0.25f;
+        public float predictAngleThreshold = 7.0f;
+
+        private Vector3 _predictedPositionStart;
+        private Vector3 _predictedPositionTarget;
+        private Quaternion _predictedRotationStart;
+        private Quaternion _predictedRotationTarget;
+        private float _predictedLerp = 1.0f;
+        private float _tickRate = 20.0f;
+
+        void Start()
+        {
+            _predictedLerp = 1.0f;
+
+            _predictedPositionStart = transform.position;
+            _predictedPositionTarget = transform.position;
+
+            _predictedRotationStart = transform.rotation;
+            _predictedRotationTarget = transform.rotation;
+
+            _tickRate = NetworkManager.GetInstance().GetTickRate();
+        }
+
+        void Update()
+        {
+            if ((networkObject.IsOwner() && networkObject.HasAuthority()) || _predictedLerp >= 1.0f)
+                return;
+
+            _predictedLerp += Time.deltaTime * _tickRate;
+
+            if (predictMovement && transform.position != _predictedPositionTarget)
+                transform.position = Vector3.Lerp(_predictedPositionStart, _predictedPositionTarget, _predictedLerp);
+
+            if (predictRotation && transform.rotation != _predictedRotationTarget)
+                transform.rotation = Quaternion.Lerp(_predictedRotationStart, _predictedRotationTarget, _predictedLerp);
+        }
+
         public override void OnServerStart()
         {
             _lastPosition = transform.position;
@@ -42,10 +82,46 @@ namespace KitSymes.GTRP.Components
             if (sync.timestamp.CompareTo(_lastSyncTimestamp) <= 0)
                 return;
 
+            _predictedLerp = 0.0f;
+
             if (sync.containsPosition)
+            {
+                if (predictMovement)
+                {
+                    Vector3 dir = sync.position - _predictedPositionStart;
+                    _predictedPositionStart = sync.position;
+
+                    // Check if the angle between the last synced Position and new Position is small enough that we can predict it with
+                    // user determined acceptible visual issues
+                    if (dir.sqrMagnitude <= predictSquareThreshold)
+                        _predictedPositionTarget = sync.position + dir;
+                    // Otherwise, we don't want to predict so set the Target to our current Position
+                    else
+                        _predictedPositionTarget = sync.position;
+                }
                 transform.position = sync.position;
+            }
+
             if (sync.containsRotation)
+            {
+                if (predictRotation)
+                {
+                    // Check if the angle between the last synced Rotation and new Rotation is small enough that we can predict it with
+                    // user determined acceptible visual issues
+                    if (Quaternion.Angle(sync.rotation, _predictedRotationStart) <= predictAngleThreshold)
+                    {
+                        Quaternion dir = sync.rotation * Quaternion.Inverse(_predictedRotationStart);
+                        _predictedRotationTarget = dir * sync.rotation;
+                    }
+                    // Otherwise, we don't want to predict so set the Target to our current Rotation
+                    else
+                        _predictedRotationTarget = sync.rotation;
+
+                    _predictedRotationStart = sync.rotation;
+                }
                 transform.rotation = sync.rotation;
+            }
+
             if (sync.containsScale)
                 transform.localScale = sync.localScale;
             _lastSyncTimestamp = sync.timestamp;

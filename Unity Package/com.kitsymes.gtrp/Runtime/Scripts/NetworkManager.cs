@@ -68,7 +68,7 @@ namespace KitSymes.GTRP
         /// The number of times per second the game ticks at. Changable in the Insepctor. Should be the same for both Client and Server.
         /// </summary>
         [SerializeField, Tooltip("Change the number of ticks per second")]
-        private float _tickRate = 20;
+        private int _tickRate = 20;
         /// <summary>
         /// The time since the game last ticked.
         /// </summary>
@@ -952,5 +952,7 @@ namespace KitSymes.GTRP
         /// </summary>
         /// <returns></returns>
         public Dictionary<uint, NetworkObject> GetSpawnedObjects() { return _spawnedObjects; }
+
+        public int GetTickRate() { return _tickRate; }
     }
 }
