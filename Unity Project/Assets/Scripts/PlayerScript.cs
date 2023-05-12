@@ -34,6 +34,12 @@ public partial class PlayerScript : NetworkBehaviour
         _renderer.material.SetColor("_Color", new Color(r, g, b));
     }
 
+    [ClientRPC]
+    void SetColorab(float r, float g, float b)
+    {
+        _renderer.material.SetColor("_Color", new Color(r, g, b));
+    }
+
     new void Awake()
     {
         base.Awake();

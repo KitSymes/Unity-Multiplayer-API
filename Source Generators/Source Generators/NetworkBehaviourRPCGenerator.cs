@@ -32,7 +32,7 @@ namespace KitSymes.GTRP.SourceGenerators
                  .GroupBy<IMethodSymbol, INamedTypeSymbol>(f => f.ContainingType, SymbolEqualityComparer.Default))
             {
                 string classSource = AddServerRPCsClass(group.Key, group);
-                context.AddSource(group.Key.Name + "_NetworkBehaviour_ClientRPCs.cs", SourceText.From(classSource, Encoding.UTF8));
+                context.AddSource(group.Key.Name + "_NetworkBehaviour_ServerRPCs.cs", SourceText.From(classSource, Encoding.UTF8));
             }
 
             if (syntaxReceiver.debug)
@@ -66,13 +66,13 @@ using KitSymes.GTRP.Packets;
 // This is an automatically generated class to handle ClientRPCs
 public partial class {classSymbol.Name} 
 {{
-    uint _offset = 0;
+    uint _clientRPCOffset = 0;
     
     public override uint InitialiseClientRPCs()
     {{
-        _offset = base.InitialiseClientRPCs();
+        _clientRPCOffset = base.InitialiseClientRPCs();
 
-        return _offset + {methods.Count()};
+        return _clientRPCOffset + {methods.Count()};
     }}
 ");
 
@@ -95,13 +95,13 @@ using KitSymes.GTRP.Packets;
 // This is an automatically generated class to handle ServerRPCs
 public partial class {classSymbol.Name} 
 {{
-    uint _offset = 0;
+    uint _serverRPCOffset = 0;
     
     public override uint InitialiseServerRPCs()
     {{
-        _offset = base.InitialiseServerRPCs();
+        _serverRPCOffset = base.InitialiseServerRPCs();
 
-        return _offset + {methods.Count()};
+        return _serverRPCOffset + {methods.Count()};
     }}
 ");
 
@@ -133,12 +133,14 @@ public partial class {classSymbol.Name}
                 stringBuilder.Append($@")
     {{
         List<byte> data = new List<byte>();
+
 ");
                 foreach (IParameterSymbol parameter in method.Parameters)
                 {
                     stringBuilder.AppendLine($"        data.AddRange(ByteConverter.SerialiseArgument<{parameter.Type}>({parameter.Name}));");
                 }
-                stringBuilder.Append($@"        Packet{(client ? "Client" : "Server")}RPC packet = Create{(client ? "Client" : "Server")}RPCPacket(_offset + {id}, data.ToArray());
+                stringBuilder.Append($@"
+        Packet{(client ? "Client" : "Server")}RPC packet = Create{(client ? "Client" : "Server")}RPCPacket(_{(client ? "client" : "server")}RPCOffset + {id}, data.ToArray());
         networkObject.AddTCPPacket(packet);
     }}
 ");
@@ -165,14 +167,16 @@ public partial class {classSymbol.Name}
             int id = 0;
             foreach (IMethodSymbol method in methods)
             {
-                stringBuilder.Append($@"        {(id > 0 ? "else " : "")}if (packet.methodID == {id} + _offset)
+                stringBuilder.Append($@"        {(id > 0 ? "else " : "")}if (packet.methodID == {id} + _clientRPCOffset)
         {{
 ");
                 if (method.Parameters.Length > 0)
-                    stringBuilder.AppendLine("            int pointer = 0;");
+                    stringBuilder.AppendLine(@"            int pointer = 0;
+");
                 foreach (IParameterSymbol parameter in method.Parameters)
                     stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseArgument<{parameter.Type}>(packet.data, ref pointer);");
-                stringBuilder.Append($@"            {method.Name}(");
+                stringBuilder.Append($@"
+            {method.Name}(");
                 for (int i = 0; i < method.Parameters.Length; i++)
                     stringBuilder.Append($"{(i > 0 ? ", " : "")}{method.Parameters[i].Name}");
                 stringBuilder.Append(@");
@@ -202,14 +206,16 @@ public partial class {classSymbol.Name}
             int id = 0;
             foreach (IMethodSymbol method in methods)
             {
-                stringBuilder.Append($@"        {(id > 0 ? "else " : "")}if (packet.methodID == {id} + _offset)
+                stringBuilder.Append($@"        {(id > 0 ? "else " : "")}if (packet.methodID == {id} + _serverRPCOffset)
         {{
 ");
                 if (method.Parameters.Length > 0)
-                    stringBuilder.AppendLine("            int pointer = 0;");
+                    stringBuilder.AppendLine(@"            int pointer = 0;
+");
                 foreach (IParameterSymbol parameter in method.Parameters)
                     stringBuilder.AppendLine($"            {parameter.Type} {parameter.Name} = ({parameter.Type}) ByteConverter.DeserialiseArgument<{parameter.Type}>(packet.data, ref pointer);");
-                stringBuilder.Append($@"            {method.Name}(");
+                stringBuilder.Append($@"
+            {method.Name}(");
                 for (int i = 0; i < method.Parameters.Length; i++)
                     stringBuilder.Append($"{(i > 0 ? ", " : "")}{method.Parameters[i].Name}");
                 stringBuilder.Append(@");
