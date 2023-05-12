@@ -146,7 +146,6 @@ public partial class {classSymbol.Name}
 ");
                 id++;
             }
-            stringBuilder.AppendLine();
 
             return stringBuilder.ToString();
         }
