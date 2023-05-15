@@ -154,14 +154,23 @@ namespace KitSymes.GTRP.Internal
                 try
                 {
                     UdpReceiveResult result = await _udpClient.ReceiveAsync();
-#if UNITY_EDITOR
-                    _networkManager.bytesRead += result.Buffer.Length;
-#endif
+                    if (_networkManager.debug)
+                        _networkManager.bytesRead += result.Buffer.Length;
 
-                    // Deserialise Packet
-                    Packet packet = PacketFormatter.Deserialise(result.Buffer);
-                    //Debug.Log("Recieved " + packet.GetType());
-                    ProcessUDPPacket(packet);
+                    int pointer = 0;
+                    int packetCount = (int)ByteConverter.DeserialiseArgument<int>(result.Buffer, ref pointer);
+
+                    for (int i = 0; i < packetCount; i++)
+                    {
+                        int packetSize = (int)ByteConverter.DeserialiseArgument<int>(result.Buffer, ref pointer);
+
+                        // Deserialise Packet
+                        Packet packet = PacketFormatter.Deserialise(result.Buffer, pointer);
+                        pointer += packetSize;
+
+                        //Debug.Log("Recieved " + packet.GetType());
+                        ProcessUDPPacket(packet);
+                    }
                 }
                 catch (ObjectDisposedException)
                 {

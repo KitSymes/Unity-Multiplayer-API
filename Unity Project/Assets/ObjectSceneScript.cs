@@ -8,7 +8,7 @@ public class ObjectSceneScript : MonoBehaviour
     public GameObject testCubePrefab;
     public int max;
     private int _count = 0;
-    private float _timeSince = 10.0f;
+    private float _timeSince = 2.0f;
 
     void Start()
     {

@@ -25,17 +25,17 @@ namespace KitSymes.GTRP.Internal
             bytes.InsertRange(0, BitConverter.GetBytes(packetToID[packet.GetType()]));
             return bytes.ToArray();
         }
-        public static Packet Deserialise(byte[] bytes)
+        public static Packet Deserialise(byte[] bytes, int offset = 0)
         {
             if (bytes.Length < sizeof(uint))
                 throw new ArgumentException("Invalid bytes");
 
-            uint id = BitConverter.ToUInt32(bytes, 0);
+            uint id = BitConverter.ToUInt32(bytes, offset);
             if (!idToPacket.ContainsKey(id))
                 throw new ArgumentException($"Packet {id} not found");
 
             Packet packet = (Packet)Activator.CreateInstance(idToPacket[id]);
-            packet.Deserialise(bytes, sizeof(uint));
+            packet.Deserialise(bytes, offset + sizeof(uint));
             return packet;
         }
     }

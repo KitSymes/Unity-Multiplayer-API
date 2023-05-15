@@ -458,16 +458,23 @@ namespace KitSymes.GTRP
             if (packets.Length <= 0)
                 return;
 
-            //List<byte> packetBuffer = new List<byte>();
+            List<byte> packetBuffer = new List<byte>();
+            packetBuffer.AddRange(ByteConverter.SerialiseArgument<int>(packets.Length));
+
             foreach (Packet packet in packets)
             {
                 // Prepare Packet
-                byte[] bytes = PacketFormatter.Serialise(packet);
+                byte[] buffer = PacketFormatter.Serialise(packet);
 
-                foreach (ServerSideClient client in _serverSideClients.Values)
-                    if (client.GetUdpEndPoint() != null)
-                        _serverUDPClient.SendAsync(bytes, bytes.Length, client.GetUdpEndPoint());
+                // Prepare Packet Size + Packet
+                packetBuffer.AddRange(ByteConverter.SerialiseArgument<int>(buffer.Length));
+                packetBuffer.AddRange(buffer);
             }
+
+            // Send all info
+            foreach (ServerSideClient client in _serverSideClients.Values)
+                if (client.GetUdpEndPoint() != null)
+                    _serverUDPClient.SendAsync(packetBuffer.ToArray(), packetBuffer.Count, client.GetUdpEndPoint());
         }
 
         /// <summary>
