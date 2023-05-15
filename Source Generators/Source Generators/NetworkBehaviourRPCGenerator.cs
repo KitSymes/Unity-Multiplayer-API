@@ -137,7 +137,7 @@ public partial class {classSymbol.Name}
 ");
                 foreach (IParameterSymbol parameter in method.Parameters)
                 {
-                    stringBuilder.AppendLine($"        data.AddRange(ByteConverter.SerialiseArgument<{parameter.Type}>({parameter.Name}));");
+                    stringBuilder.AppendLine($"        data.AddRange(ByteConverter.SerialiseArgument({parameter.Name}));");
                 }
                 stringBuilder.Append($@"
         Packet{(client ? "Client" : "Server")}RPC packet = Create{(client ? "Client" : "Server")}RPCPacket(_{(client ? "client" : "server")}RPCOffset + {id}, data.ToArray());

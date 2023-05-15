@@ -459,7 +459,7 @@ namespace KitSymes.GTRP
                 return;
 
             List<byte> packetBuffer = new List<byte>();
-            packetBuffer.AddRange(ByteConverter.SerialiseArgument<int>(packets.Length));
+            packetBuffer.AddRange(ByteConverter.SerialiseArgument(packets.Length));
 
             foreach (Packet packet in packets)
             {
@@ -467,7 +467,7 @@ namespace KitSymes.GTRP
                 byte[] buffer = PacketFormatter.Serialise(packet);
 
                 // Prepare Packet Size + Packet
-                packetBuffer.AddRange(ByteConverter.SerialiseArgument<int>(buffer.Length));
+                packetBuffer.AddRange(ByteConverter.SerialiseArgument(buffer.Length));
                 packetBuffer.AddRange(buffer);
             }
 

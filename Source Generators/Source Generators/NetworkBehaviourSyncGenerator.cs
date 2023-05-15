@@ -205,7 +205,7 @@ public partial class {classSymbol.Name}
             _{field.Name}Changed = false;
 ");
                 // Check to see if this field is a type we know how to handle
-                stringBuilder.AppendLine($"            list.AddRange(ByteConverter.SerialiseArgument<{field.Type}>({field.Name}));");
+                stringBuilder.AppendLine($"            list.AddRange(ByteConverter.SerialiseArgument({field.Name}));");
                 stringBuilder.Append(@"        }
 ");
             }
@@ -246,7 +246,7 @@ public partial class {classSymbol.Name}
 
             // Add each field to the packet
             foreach (IFieldSymbol field in fields)
-                stringBuilder.AppendLine($"        list.AddRange(ByteConverter.SerialiseArgument<{field.Type}>({field.Name}));");
+                stringBuilder.AppendLine($"        list.AddRange(ByteConverter.SerialiseArgument({field.Name}));");
 
             stringBuilder.Append(GetFullData_Post);
 

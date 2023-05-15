@@ -16,7 +16,6 @@ namespace KitSymes.GTRP
             //UnityEngine.Debug.Log("-========== Serialising ==========-");
 
             int fieldCount = 0;
-            MethodInfo method = typeof(ByteConverter).GetMethod(nameof(ByteConverter.SerialiseArgument));
             foreach (System.Reflection.FieldInfo field in GetType().GetFields())
             {
                 //UnityEngine.Debug.Log($"{field.Name} {bytes.Count}");
@@ -31,15 +30,14 @@ namespace KitSymes.GTRP
                 {
                     // Set the field header bit
                     header[fieldCount / 8] |= (byte)(1 << fieldCount % 8);
-                    MethodInfo generic = method.MakeGenericMethod(field.FieldType);
-                    bytes.AddRange((byte[])generic.Invoke(null, new object[] { value }));
+                    bytes.AddRange(ByteConverter.SerialiseArgument(value));
                 }
 
                 fieldCount++;
             }
 
             List<byte> packet = new List<byte>();
-            packet.AddRange(ByteConverter.SerialiseArgument<int>(header.Count));
+            packet.AddRange(ByteConverter.SerialiseArgument(header.Count));
             packet.AddRange(header);
             packet.AddRange(bytes);
             return packet;

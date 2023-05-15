@@ -70,15 +70,15 @@ namespace KitSymes.GTRP.Packets
                 config |= 1 << 2;
             bytes.Add(config);
 
-            bytes.AddRange(BitConverter.GetBytes(target));
-            bytes.AddRange(ByteConverter.GetBytes(timestamp));
+            bytes.AddRange(ByteConverter.SerialiseArgument(target));
+            bytes.AddRange(ByteConverter.SerialiseArgument(timestamp));
 
             if (containsPosition)
-                bytes.AddRange(ByteConverter.GetBytes(position));
+                bytes.AddRange(ByteConverter.SerialiseArgument(position));
             if (containsRotation)
-                bytes.AddRange(ByteConverter.GetBytes(rotation));
+                bytes.AddRange(ByteConverter.SerialiseArgument(rotation));
             if (containsScale)
-                bytes.AddRange(ByteConverter.GetBytes(localScale));
+                bytes.AddRange(ByteConverter.SerialiseArgument(localScale));
 
             return bytes;
         }

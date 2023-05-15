@@ -86,14 +86,14 @@ namespace KitSymes.GTRP.Internal
 
             bytes.Add(nullCheck);
 
-            if (parameters.D != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.D));
-            if (parameters.DP != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.DP));
-            if (parameters.DQ != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.DQ));
-            if (parameters.Exponent != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.Exponent));
-            if (parameters.InverseQ != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.InverseQ));
-            if (parameters.Modulus != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.Modulus));
-            if (parameters.P != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.P));
-            if (parameters.Q != null) bytes.AddRange(SerialiseArgument<byte[]>(parameters.Q));
+            if (parameters.D != null) bytes.AddRange(SerialiseArgument(parameters.D));
+            if (parameters.DP != null) bytes.AddRange(SerialiseArgument(parameters.DP));
+            if (parameters.DQ != null) bytes.AddRange(SerialiseArgument(parameters.DQ));
+            if (parameters.Exponent != null) bytes.AddRange(SerialiseArgument(parameters.Exponent));
+            if (parameters.InverseQ != null) bytes.AddRange(SerialiseArgument(parameters.InverseQ));
+            if (parameters.Modulus != null) bytes.AddRange(SerialiseArgument(parameters.Modulus));
+            if (parameters.P != null) bytes.AddRange(SerialiseArgument(parameters.P));
+            if (parameters.Q != null) bytes.AddRange(SerialiseArgument(parameters.Q));
 
             return bytes.ToArray();
         }
@@ -205,68 +205,69 @@ namespace KitSymes.GTRP.Internal
             return parameters;
         }
 
-        public static byte[] SerialiseArgument<T>(object obj)
+        public static byte[] SerialiseArgument(object obj)
         {
             // Primitives
-            if (typeof(T) == typeof(bool))
+            if (obj.GetType() == typeof(bool))
                 return BitConverter.GetBytes((bool)obj);
-            else if (typeof(T) == typeof(short))
+            else if (obj.GetType() == typeof(short))
                 return BitConverter.GetBytes((short)obj);
-            else if (typeof(T) == typeof(int))
+            else if (obj.GetType() == typeof(int))
                 return BitConverter.GetBytes((int)obj);
-            else if (typeof(T) == typeof(long))
+            else if (obj.GetType() == typeof(long))
                 return BitConverter.GetBytes((long)obj);
-            else if (typeof(T) == typeof(ushort))
+            else if (obj.GetType() == typeof(ushort))
                 return BitConverter.GetBytes((ushort)obj);
-            else if (typeof(T) == typeof(uint))
+            else if (obj.GetType() == typeof(uint))
                 return BitConverter.GetBytes((uint)obj);
-            else if (typeof(T) == typeof(ulong))
+            else if (obj.GetType() == typeof(ulong))
                 return BitConverter.GetBytes((ulong)obj);
-            else if (typeof(T) == typeof(float))
+            else if (obj.GetType() == typeof(float))
                 return BitConverter.GetBytes((float)obj);
-            else if (typeof(T) == typeof(double))
+            else if (obj.GetType() == typeof(double))
                 return BitConverter.GetBytes((double)obj);
-            else if (typeof(T) == typeof(char))
+            else if (obj.GetType() == typeof(char))
                 return BitConverter.GetBytes((char)obj);
-            else if (typeof(T) == typeof(byte))
+            else if (obj.GetType() == typeof(byte))
                 return new byte[1] { (byte)obj };
-            else if (typeof(T) == typeof(string))
+            else if (obj.GetType() == typeof(string))
                 return ByteConverter.GetBytes((string)obj);
-            else if (typeof(T).IsArray)
+            else if (obj.GetType().IsArray)
             {
                 List<byte> list = new List<byte>();
                 Array array = obj as Array;
-                list.AddRange(SerialiseArgument<int>(array.Length));
-                MethodInfo method = typeof(ByteConverter).GetMethod(nameof(ByteConverter.SerialiseArgument));
-                MethodInfo generic = method.MakeGenericMethod(array.GetType().GetElementType());
+                list.AddRange(SerialiseArgument(array.Length));
+                //MethodInfo method = typeof(ByteConverter).GetMethod(nameof(ByteConverter.SerialiseArgument));
+                //MethodInfo generic = method.MakeGenericMethod(array.GetType().GetElementType());
                 for (int i = 0; i < array.Length; i++)
                 {
-                    //list.AddRange(SerialiseArgument(array.GetValue(i)));
-                    list.AddRange((byte[])generic.Invoke(null, new object[] { array.GetValue(i) }));
+                    list.AddRange(SerialiseArgument(array.GetValue(i)));
+                    //list.AddRange((byte[])generic.Invoke(null, new object[] { array.GetValue(i) }));
                 }
                 return list.ToArray();
             }
             // Plugin Provided
-            else if (typeof(T) == typeof(Vector3))
+            else if (obj.GetType() == typeof(Vector3))
                 return ByteConverter.GetBytes((Vector3)obj);
-            else if (typeof(T) == typeof(Quaternion))
+            else if (obj.GetType() == typeof(Quaternion))
                 return ByteConverter.GetBytes((Quaternion)obj);
-            else if (typeof(T) == typeof(DateTime))
+            else if (obj.GetType() == typeof(DateTime))
                 return ByteConverter.GetBytes((DateTime)obj);
-            else if (typeof(T) == typeof(IPEndPoint))
+            else if (obj.GetType() == typeof(IPEndPoint))
                 return ByteConverter.GetBytes((IPEndPoint)obj);
-            else if (typeof(T) == typeof(RSAParameters))
+            else if (obj.GetType() == typeof(RSAParameters))
                 return ByteConverter.GetBytes((RSAParameters)obj);
             // Add Custom Here
-            /*else if (typeof(T) == typeof(YourType))
+            /*else if (obj.GetType() == typeof(YourType))
                 // Add a custom overload to ByteConverter
                 return ByteConverter.GetBytes((YourType)obj);*/
             else
             {
-                Debug.LogWarning("Packet Serialisation: Unsupported type " + typeof(T));
+                Debug.LogWarning("Packet Serialisation: Unsupported type " + obj.GetType());
                 return new byte[0];
             }
         }
+
         public static object DeserialiseArgument<T>(byte[] bytes, ref int pointer)
         {
             // Primitives
