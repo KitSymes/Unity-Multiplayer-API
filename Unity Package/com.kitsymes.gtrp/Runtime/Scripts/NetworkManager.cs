@@ -2,6 +2,7 @@ using KitSymes.GTRP.Internal;
 using KitSymes.GTRP.Packets;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -91,15 +92,14 @@ namespace KitSymes.GTRP
         private uint _clientID;
 
 
-#if UNITY_EDITOR
         // Debug Variables
 
         // Variables to display the number of bytes read per second
+        public bool debug = false;
         public int bytesRead = 0;
         [SerializeField]
         private Text _bytesReadText;
         private float _timeSinceLastBytesReadUpdate = 0.0f;
-#endif
 
         /// <summary>
         /// Called by both <see cref="ServerStart(int)"/> and <see cref="ClientStart(string, int)"/>.
@@ -134,16 +134,23 @@ namespace KitSymes.GTRP
         /// </summary>
         public void LateUpdate()
         {
-#if UNITY_EDITOR
-            _timeSinceLastBytesReadUpdate += Time.deltaTime;
-            if (_timeSinceLastBytesReadUpdate > 1.0f)
+            if (debug)
             {
-                _timeSinceLastBytesReadUpdate = 0.0f;
-                if (_bytesReadText != null)
-                    _bytesReadText.text = bytesRead + " bytes/s";
-                bytesRead = 0;
+                _timeSinceLastBytesReadUpdate += Time.deltaTime;
+                if (_timeSinceLastBytesReadUpdate > 1.0f)
+                {
+                    _timeSinceLastBytesReadUpdate = 0.0f;
+                    if (_bytesReadText != null)
+                        _bytesReadText.text = bytesRead + " bytes/s";
+
+                    using (StreamWriter writer = new StreamWriter("export.csv", true))
+                    {
+                        writer.WriteLine(bytesRead + ", " + Time.frameCount);
+                    }
+
+                    bytesRead = 0;
+                }
             }
-#endif
 
             // Add the time since last frame to the time since last tick
             _timeSinceLastTick += Time.deltaTime;
@@ -306,9 +313,8 @@ namespace KitSymes.GTRP
                 try
                 {
                     UdpReceiveResult result = await _serverUDPClient.ReceiveAsync();
-#if UNITY_EDITOR
-                    bytesRead += result.Buffer.Length;
-#endif
+                    if (debug)
+                        bytesRead += result.Buffer.Length;
 
                     foreach (ServerSideClient client in _serverSideClients.Values)
                     {

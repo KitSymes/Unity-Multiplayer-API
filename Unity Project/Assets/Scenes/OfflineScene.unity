@@ -415,7 +415,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: onlineScene
-      value: Scenes/OnlineScene
+      value: Scenes/SpawningTest
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _onlineScene
@@ -432,6 +432,10 @@ PrefabInstance:
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _offlineScene
       value: Scenes/OfflineScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
+      propertyPath: _networkManager.debug
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4028943667592227581, guid: 24039f3ce0bda59468f12fb83303302d, type: 3}
       propertyPath: _networkManager._tickRate

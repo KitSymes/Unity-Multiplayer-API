@@ -86,9 +86,9 @@ namespace KitSymes.GTRP.Internal
             // Read until a packet size is encountered
             byte[] sizeBuffer = new byte[sizeof(uint)];
             int bytesRead = await _tcpClient.GetStream().ReadAsync(sizeBuffer);
-#if UNITY_EDITOR
-            _networkManager.bytesRead += bytesRead;
-#endif
+            if (_networkManager.debug)
+                _networkManager.bytesRead += bytesRead;
+
             if (bytesRead <= 0)
             {
                 return null;
@@ -102,9 +102,9 @@ namespace KitSymes.GTRP.Internal
             // Try and read the whole packet
             byte[] packetBuffer = new byte[bufferSize];
             bytesRead = await _tcpClient.GetStream().ReadAsync(packetBuffer);
-#if UNITY_EDITOR
-            _networkManager.bytesRead += bytesRead;
-#endif
+            if (_networkManager.debug)
+                _networkManager.bytesRead += bytesRead;
+
             if (bytesRead <= 0)
             {
                 return null;

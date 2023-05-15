@@ -5,41 +5,62 @@ using UnityEngine;
 
 public class DebugCubeScript : NetworkBehaviour
 {
-    public Vector3 dir;
-    public float offset;
-    private float pause1 = 6.0f;
-    private float pause2 = 12.0f;
+    bool _directionMove = true;
+    bool _directionScale = true;
+    float _timeBetweenPhases = 6.0f;
+
+    int _phase = 0;
+    float _timer;
+
+    public float delay;
+
+    void Start()
+    {
+        _timer = delay;
+    }
 
     void Update()
     {
         if (!networkObject.IsServer())
             return;
 
-        if (offset > 0.0f)
+        if (_timer <= 0.0f)
         {
-            offset -= Time.deltaTime;
-            return;
+            switch (_phase)
+            {
+                case 0:
+                case 1:
+                case 2:
+                    _timer = _timeBetweenPhases;
+                    _phase++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+            _timer -= Time.deltaTime;
+
+        if (_phase > 0)
+        {
+            transform.position += new Vector3(0.0f, (_directionMove ? 1.0f : -1.0f), 0.0f) * Time.deltaTime;
+
+            if (transform.position.y < -5 || transform.position.y > 5)
+                _directionMove = !_directionMove;
         }
 
-        transform.position += dir * Time.deltaTime;
-
-        if (transform.position.y < -5 || transform.position.y > 5)
-            dir *= -1;
-
-        if (pause1 > 0.0f)
-        {
-            pause1 -= Time.deltaTime;
-        } else
+        if (_phase > 1)
         {
             transform.Rotate(new Vector3(90.0f, 90.0f, 0.0f) * Time.deltaTime);
         }
 
-        /*if (pause2 > 0.0f)
+        if (_phase > 2)
         {
-            pause2 -= Time.deltaTime;
-        } else
-        {
-            transform.localScale += dir * Time.deltaTime;
-        }*/
+            int dir = (_directionScale ? 1 : -1);
+            transform.localScale += new Vector3(dir, dir, dir) * Time.deltaTime;
+
+            if (transform.localScale.y <= 0.0f  || transform.localScale.y > 5.0f)
+                _directionScale = !_directionScale;
+        }
     }
 }
