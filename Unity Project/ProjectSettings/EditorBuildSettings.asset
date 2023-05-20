@@ -5,19 +5,28 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/OfflineScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/OnlineScene.unity
     guid: a6e5abd0508ed384ca77078712787c8c
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/TestScene.unity
     guid: 56df8d846d324b84ea2a4feb76cee572
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SpawningTest.unity
     guid: 3c1db21f8ea63e741a7429850feeeab6
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/BandwidthTest.unity
     guid: 03d349f62a61fc14b884410bfedbf6a5
+  - enabled: 1
+    path: Assets/Mirror Assets/MirrorOfflineScene.unity
+    guid: 72a44357ea3a74341b070cd2cb3601a3
+  - enabled: 1
+    path: Assets/Mirror Assets/MirrorBandwidthTest.unity
+    guid: efa5a79b3b45c4044b23d0b1c1514af9
+  - enabled: 1
+    path: Assets/Mirror Assets/MirrorSpawningTest.unity
+    guid: 9e7ff833580a59e469c9ecf27e2a189a
   m_configObjects: {}

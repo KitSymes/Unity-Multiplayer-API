@@ -27,8 +27,6 @@ namespace KitSymes.GTRP.Components
 
         void Awake()
         {
-            Application.targetFrameRate = 300;
-
             _networkManager.SetSpawnableObjects(spawnablePrefabs);
             _networkManager.SetPlayerPrefab(playerPrefab);
             _networkManager.OnServerStart += OnStartServer;
