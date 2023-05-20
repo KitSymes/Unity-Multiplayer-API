@@ -82,9 +82,11 @@ namespace KitSymes.GTRP.Internal
                     else
                         _networkManager.ServerPacketReceived(this, packet);
                 }
-                catch (IOException)
+                catch (IOException ex)
                 {
-                    Debug.LogWarning($"SERVER: [{_id}] TCP IOException");
+                    Debug.LogWarning($"SERVER: [{_id}] TCP IOException, so has been disconnected");
+                    Debug.LogException(ex);
+                    _networkManager.Disconnect(_id);
                     break;
                 }
                 catch (ObjectDisposedException)
@@ -101,7 +103,7 @@ namespace KitSymes.GTRP.Internal
             }
             if (_running)
             {
-                Debug.LogError($"SERVER: [{_id}] TCP Closed");
+                Debug.LogError($"SERVER: [{_id}] TCP Closed Forcefully");
             }
             //Debug.Log($"SERVER: [{_id}] Client stopping receiving TCP");
         }

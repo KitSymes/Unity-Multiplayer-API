@@ -267,7 +267,7 @@ MonoBehaviour:
   autoConnectClientBuild: 0
   sendRate: 20
   offlineScene: Assets/Mirror Assets/MirrorOfflineScene.unity
-  onlineScene: Assets/Mirror Assets/MirrorBandwidthTest.unity
+  onlineScene: Assets/Mirror Assets/MirrorSpawningTest.unity
   transport: {fileID: 878024148}
   networkAddress: localhost
   maxConnections: 100
