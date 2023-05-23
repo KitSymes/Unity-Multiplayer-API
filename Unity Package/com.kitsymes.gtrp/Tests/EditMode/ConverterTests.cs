@@ -21,6 +21,17 @@ namespace KitSymes.GTRP.Tests
         }
 
         [Test]
+        public void TestStringNullConverter()
+        {
+            string original = null;
+            string different = "Random garbage";
+            string reformed = ByteConverter.ToString(ByteConverter.GetBytes(original), out _);
+
+            Assert.AreEqual(original, reformed);
+            Assert.AreNotEqual(different, reformed);
+        }
+
+        [Test]
         public void TestVectorConverter()
         {
             Vector3 original = new Vector3(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
@@ -65,9 +76,36 @@ namespace KitSymes.GTRP.Tests
         }
 
         [Test]
+        public void TestIPEndPointNullConverter()
+        {
+            IPEndPoint original = null;
+            IPEndPoint different = new IPEndPoint(IPAddress.Parse("20.21.22.23"), 24);
+            IPEndPoint reformed = ByteConverter.ToIPEndPoint(ByteConverter.GetBytes(original), out _);
+
+            Assert.AreEqual(original, reformed);
+            Assert.AreNotEqual(different, reformed);
+        }
+
+        [Test]
         public void TestRSAParametersConverter()
         {
             RSAParameters original = new RSAParameters() { Exponent = new byte[] { 1, 2, 3 } };
+            RSAParameters reformed = ByteConverter.ToRSAParameters(ByteConverter.GetBytes(original), out _);
+
+            Assert.AreEqual(original.D, reformed.D);
+            Assert.AreEqual(original.DP, reformed.DP);
+            Assert.AreEqual(original.DQ, reformed.DQ);
+            Assert.AreEqual(original.Exponent, reformed.Exponent);
+            Assert.AreEqual(original.InverseQ, reformed.InverseQ);
+            Assert.AreEqual(original.Modulus, reformed.Modulus);
+            Assert.AreEqual(original.P, reformed.P);
+            Assert.AreEqual(original.Q, reformed.Q);
+        }
+
+        [Test]
+        public void TestRSAParametersNullArgumentsConverter()
+        {
+            RSAParameters original = new RSAParameters() { };
             RSAParameters reformed = ByteConverter.ToRSAParameters(ByteConverter.GetBytes(original), out _);
 
             Assert.AreEqual(original.D, reformed.D);
