@@ -123,7 +123,7 @@ namespace KitSymes.GTRP.Tests
         [UnityTest]
         public IEnumerator TestTCPMalformed()
         {
-            LogAssert.Expect(LogType.Exception, "ClientException: Invalid packetBuffer, read 12 bytes when it should be 255");
+            LogAssert.Expect(LogType.Exception, "OverflowException");
 
             NetworkManager manager = new NetworkManager();
             try
@@ -133,7 +133,7 @@ namespace KitSymes.GTRP.Tests
                 LocalClient lc = (LocalClient)manager.GetType().GetField("_clientLocalClient", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager);
                 lc.SceneLoaded();
 
-                RunAsyncMethodSync(() => lc.WriteTCP(BitConverter.GetBytes((uint)255)));
+                RunAsyncMethodSync(() => lc.WriteTCP(BitConverter.GetBytes(uint.MaxValue)));
                 RunAsyncMethodSync(() => lc.WriteTCP(new PacketPing()));
 
                 yield return new WaitUntil(() => !manager.IsClientRunning());
