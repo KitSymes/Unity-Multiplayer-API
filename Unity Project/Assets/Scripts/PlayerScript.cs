@@ -32,10 +32,11 @@ public partial class PlayerScript : NetworkBehaviour
     void SetColor(float r, float g, float b)
     {
         _renderer.material.SetColor("_Color", new Color(r, g, b));
+        RPCSetColorOnClients(r, g, b);
     }
 
     [ClientRPC]
-    void SetColorab(float r, float g, float b)
+    void SetColorOnClients(float r, float g, float b)
     {
         _renderer.material.SetColor("_Color", new Color(r, g, b));
     }

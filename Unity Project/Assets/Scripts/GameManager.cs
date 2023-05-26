@@ -69,6 +69,9 @@ public partial class GameManager : NetworkBehaviour
 
     public void OutOfBounds()
     {
+        if (!networkObject.IsServer())
+            return;
+
         if (_ball.lastTouched == playerL)
             RScore();
         else if (_ball.lastTouched == playerR)
@@ -82,6 +85,9 @@ public partial class GameManager : NetworkBehaviour
 
     public void LScore()
     {
+        if (!networkObject.IsServer())
+            return;
+
         scoreL++;
         ResetBall();
         _ball.SetDirection(new Vector3(1.0f, 0.0f));
@@ -89,6 +95,9 @@ public partial class GameManager : NetworkBehaviour
 
     public void RScore()
     {
+        if (!networkObject.IsServer())
+            return;
+
         scoreR++;
         ResetBall();
         _ball.SetDirection(new Vector3(-1.0f, 0.0f));

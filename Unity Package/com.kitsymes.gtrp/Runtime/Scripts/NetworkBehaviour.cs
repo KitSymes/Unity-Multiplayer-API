@@ -28,7 +28,7 @@ namespace KitSymes.GTRP
         {
             networkObject = GetComponent<NetworkObject>();
             _id = networkObject.RegisterNetworkBehaviour(this);
-            _lastUpdate = DateTime.UtcNow;
+            _lastUpdate = DateTime.MinValue;
             InitialiseSyncData();
             InitialiseClientRPCs();
         }
