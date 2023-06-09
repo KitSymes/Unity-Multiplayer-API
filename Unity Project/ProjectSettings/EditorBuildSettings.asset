@@ -20,13 +20,4 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/BandwidthTest.unity
     guid: 03d349f62a61fc14b884410bfedbf6a5
-  - enabled: 0
-    path: Assets/Mirror Assets/MirrorOfflineScene.unity
-    guid: 72a44357ea3a74341b070cd2cb3601a3
-  - enabled: 0
-    path: Assets/Mirror Assets/MirrorBandwidthTest.unity
-    guid: efa5a79b3b45c4044b23d0b1c1514af9
-  - enabled: 0
-    path: Assets/Mirror Assets/MirrorSpawningTest.unity
-    guid: 9e7ff833580a59e469c9ecf27e2a189a
   m_configObjects: {}
